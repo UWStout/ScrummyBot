@@ -1,9 +1,9 @@
 # Scrummy Bot
 Scrummy Bot is a discord bot programmed using node.js and discord.js and backed by a MongoDB database. It can be used by software engineering
 and game design teams to track and encourage the following:
-- Clocking and and out to track time worked
-- Managing daily standup meeting commitments
-- Managing sprint deadlines and efforts
+- Clocking in and out to track time worked
+- Remembering daily standup meeting commitments
+- Remembering sprint deadlines and reporting individual, per-sprint efforts
 - Generating reports of all of the above
 
 ## Why Did We Create This?

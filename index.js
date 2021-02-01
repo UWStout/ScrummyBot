@@ -24,7 +24,7 @@ bot.on('ready', () => {
 // Respond to message event
 bot.on('message', (msg) => {
   // Split message to search for a bot command
-  const args = msg.content.split(/ +/)
+  const args = msg.content.split(/\s+/)
   const command = args.shift().toLowerCase()
 
   // This is not a command

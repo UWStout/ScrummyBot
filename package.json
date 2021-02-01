@@ -8,14 +8,18 @@
     "build": "run-s clean build-bot",
     "clean": "rimraf dist",
     "devbuild": "run-s clean devbuild-bot devstart",
-    "devbuild-bot": "esbuild --define:_DEV_=true --platform=node --bundle --outfile=dist/scrummybot.js index.js",
-    "build-bot": "esbuild --define:_DEV_=false --platform=node --bundle --minify --outfile=dist/scrummybot.min.js index.js",
+    "devbuild-bot": "esbuild --define:_DEV_=true --platform=node --external:saslprep --bundle --outfile=dist/scrummybot.js index.js",
+    "build-bot": "esbuild --define:_DEV_=false --platform=node --external:saslprep --bundle --outfile=dist/scrummybot.js index.js",
     "devstart": "bash -c 'DEBUG=bot,bot:* DEBUG_HIDE_DATE=true DEBUG_COLORS=true node dist/scrummybot.js'",
-    "start": "node dist/scrummybot.min.js"
+    "start": "bash -c 'DEBUG=bot,bot:* DEBUG_HIDE_DATE=true DEBUG_COLORS=true node dist/scrummybot.js"
+  },
+  "engines": {
+    "node": "14.x"
   },
   "nodemonConfig": {
     "ignore": [
       "dist/",
+      "Procfile",
       "node_modules",
       ".eslintrc.json",
       "package-lock.json",
@@ -27,6 +31,7 @@
   "author": "Seth Berrier",
   "license": "MIT",
   "devDependencies": {
+    "d3-time": "^2.0.0",
     "discord.js": "^11.5.1",
     "dotenv": "^8.2.0",
     "debug": "^4.3.1",
@@ -39,9 +44,7 @@
     "mongodb": "^3.6.3",
     "nodemon": "^2.0.7",
     "npm-run-all": "^4.1.5",
-    "rimraf": "^3.0.2"
-  },
-  "dependencies": {
-    "d3-time": "^2.0.0"
+    "rimraf": "^3.0.2",
+    "saslprep": "^1.0.3"
   }
 }

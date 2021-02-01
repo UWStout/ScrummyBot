@@ -11,15 +11,15 @@ import Debug from 'debug'
 // Import parent command object
 import Command from './Command.js'
 
-// Create database urls
-const DEV_DB_URL = 'mongodb://localhost:27017/ScrummyData'
-const PROD_DB_URL = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PW}@profberriercluster.zzyhu.mongodb.net/ScrummyData?retryWrites=true&w=majority`
-
 // Setup debug output object
 const debug = Debug('bot:db_command_base')
 
 // Load .env config (contains DB login credentials)
 dotenv.config()
+
+// Create database urls
+const DEV_DB_URL = 'mongodb://localhost:27017/ScrummyData'
+const PROD_DB_URL = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PW}@profberriercluster.zzyhu.mongodb.net/ScrummyData?retryWrites=true&w=majority`
 
 class DBCommandBase extends Command {
   constructor (name, alias, description) {

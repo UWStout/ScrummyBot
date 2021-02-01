@@ -27113,335 +27113,6 @@ var require_gssapi = __commonJS((exports2, module2) => {
   }
 });
 
-// node_modules/memory-pager/index.js
-var require_memory_pager = __commonJS((exports2, module2) => {
-  module2.exports = Pager;
-  function Pager(pageSize, opts) {
-    if (!(this instanceof Pager))
-      return new Pager(pageSize, opts);
-    this.length = 0;
-    this.updates = [];
-    this.path = new Uint16Array(4);
-    this.pages = new Array(32768);
-    this.maxPages = this.pages.length;
-    this.level = 0;
-    this.pageSize = pageSize || 1024;
-    this.deduplicate = opts ? opts.deduplicate : null;
-    this.zeros = this.deduplicate ? alloc(this.deduplicate.length) : null;
-  }
-  Pager.prototype.updated = function(page) {
-    while (this.deduplicate && page.buffer[page.deduplicate] === this.deduplicate[page.deduplicate]) {
-      page.deduplicate++;
-      if (page.deduplicate === this.deduplicate.length) {
-        page.deduplicate = 0;
-        if (page.buffer.equals && page.buffer.equals(this.deduplicate))
-          page.buffer = this.deduplicate;
-        break;
-      }
-    }
-    if (page.updated || !this.updates)
-      return;
-    page.updated = true;
-    this.updates.push(page);
-  };
-  Pager.prototype.lastUpdate = function() {
-    if (!this.updates || !this.updates.length)
-      return null;
-    var page = this.updates.pop();
-    page.updated = false;
-    return page;
-  };
-  Pager.prototype._array = function(i, noAllocate) {
-    if (i >= this.maxPages) {
-      if (noAllocate)
-        return;
-      grow(this, i);
-    }
-    factor(i, this.path);
-    var arr = this.pages;
-    for (var j = this.level; j > 0; j--) {
-      var p = this.path[j];
-      var next = arr[p];
-      if (!next) {
-        if (noAllocate)
-          return;
-        next = arr[p] = new Array(32768);
-      }
-      arr = next;
-    }
-    return arr;
-  };
-  Pager.prototype.get = function(i, noAllocate) {
-    var arr = this._array(i, noAllocate);
-    var first = this.path[0];
-    var page = arr && arr[first];
-    if (!page && !noAllocate) {
-      page = arr[first] = new Page(i, alloc(this.pageSize));
-      if (i >= this.length)
-        this.length = i + 1;
-    }
-    if (page && page.buffer === this.deduplicate && this.deduplicate && !noAllocate) {
-      page.buffer = copy(page.buffer);
-      page.deduplicate = 0;
-    }
-    return page;
-  };
-  Pager.prototype.set = function(i, buf) {
-    var arr = this._array(i, false);
-    var first = this.path[0];
-    if (i >= this.length)
-      this.length = i + 1;
-    if (!buf || this.zeros && buf.equals && buf.equals(this.zeros)) {
-      arr[first] = void 0;
-      return;
-    }
-    if (this.deduplicate && buf.equals && buf.equals(this.deduplicate)) {
-      buf = this.deduplicate;
-    }
-    var page = arr[first];
-    var b = truncate(buf, this.pageSize);
-    if (page)
-      page.buffer = b;
-    else
-      arr[first] = new Page(i, b);
-  };
-  Pager.prototype.toBuffer = function() {
-    var list = new Array(this.length);
-    var empty = alloc(this.pageSize);
-    var ptr = 0;
-    while (ptr < list.length) {
-      var arr = this._array(ptr, true);
-      for (var i = 0; i < 32768 && ptr < list.length; i++) {
-        list[ptr++] = arr && arr[i] ? arr[i].buffer : empty;
-      }
-    }
-    return Buffer.concat(list);
-  };
-  function grow(pager, index) {
-    while (pager.maxPages < index) {
-      var old = pager.pages;
-      pager.pages = new Array(32768);
-      pager.pages[0] = old;
-      pager.level++;
-      pager.maxPages *= 32768;
-    }
-  }
-  function truncate(buf, len) {
-    if (buf.length === len)
-      return buf;
-    if (buf.length > len)
-      return buf.slice(0, len);
-    var cpy = alloc(len);
-    buf.copy(cpy);
-    return cpy;
-  }
-  function alloc(size) {
-    if (Buffer.alloc)
-      return Buffer.alloc(size);
-    var buf = new Buffer(size);
-    buf.fill(0);
-    return buf;
-  }
-  function copy(buf) {
-    var cpy = Buffer.allocUnsafe ? Buffer.allocUnsafe(buf.length) : new Buffer(buf.length);
-    buf.copy(cpy);
-    return cpy;
-  }
-  function Page(i, buf) {
-    this.offset = i * buf.length;
-    this.buffer = buf;
-    this.updated = false;
-    this.deduplicate = 0;
-  }
-  function factor(n, out) {
-    n = (n - (out[0] = n & 32767)) / 32768;
-    n = (n - (out[1] = n & 32767)) / 32768;
-    out[3] = (n - (out[2] = n & 32767)) / 32768 & 32767;
-  }
-});
-
-// node_modules/sparse-bitfield/index.js
-var require_sparse_bitfield = __commonJS((exports2, module2) => {
-  var pager = require_memory_pager();
-  module2.exports = Bitfield;
-  function Bitfield(opts) {
-    if (!(this instanceof Bitfield))
-      return new Bitfield(opts);
-    if (!opts)
-      opts = {};
-    if (Buffer.isBuffer(opts))
-      opts = {buffer: opts};
-    this.pageOffset = opts.pageOffset || 0;
-    this.pageSize = opts.pageSize || 1024;
-    this.pages = opts.pages || pager(this.pageSize);
-    this.byteLength = this.pages.length * this.pageSize;
-    this.length = 8 * this.byteLength;
-    if (!powerOfTwo(this.pageSize))
-      throw new Error("The page size should be a power of two");
-    this._trackUpdates = !!opts.trackUpdates;
-    this._pageMask = this.pageSize - 1;
-    if (opts.buffer) {
-      for (var i = 0; i < opts.buffer.length; i += this.pageSize) {
-        this.pages.set(i / this.pageSize, opts.buffer.slice(i, i + this.pageSize));
-      }
-      this.byteLength = opts.buffer.length;
-      this.length = 8 * this.byteLength;
-    }
-  }
-  Bitfield.prototype.get = function(i) {
-    var o = i & 7;
-    var j = (i - o) / 8;
-    return !!(this.getByte(j) & 128 >> o);
-  };
-  Bitfield.prototype.getByte = function(i) {
-    var o = i & this._pageMask;
-    var j = (i - o) / this.pageSize;
-    var page = this.pages.get(j, true);
-    return page ? page.buffer[o + this.pageOffset] : 0;
-  };
-  Bitfield.prototype.set = function(i, v) {
-    var o = i & 7;
-    var j = (i - o) / 8;
-    var b = this.getByte(j);
-    return this.setByte(j, v ? b | 128 >> o : b & (255 ^ 128 >> o));
-  };
-  Bitfield.prototype.toBuffer = function() {
-    var all = alloc(this.pages.length * this.pageSize);
-    for (var i = 0; i < this.pages.length; i++) {
-      var next = this.pages.get(i, true);
-      var allOffset = i * this.pageSize;
-      if (next)
-        next.buffer.copy(all, allOffset, this.pageOffset, this.pageOffset + this.pageSize);
-    }
-    return all;
-  };
-  Bitfield.prototype.setByte = function(i, b) {
-    var o = i & this._pageMask;
-    var j = (i - o) / this.pageSize;
-    var page = this.pages.get(j, false);
-    o += this.pageOffset;
-    if (page.buffer[o] === b)
-      return false;
-    page.buffer[o] = b;
-    if (i >= this.byteLength) {
-      this.byteLength = i + 1;
-      this.length = this.byteLength * 8;
-    }
-    if (this._trackUpdates)
-      this.pages.updated(page);
-    return true;
-  };
-  function alloc(n) {
-    if (Buffer.alloc)
-      return Buffer.alloc(n);
-    var b = new Buffer(n);
-    b.fill(0);
-    return b;
-  }
-  function powerOfTwo(x) {
-    return !(x & x - 1);
-  }
-});
-
-// node_modules/saslprep/lib/memory-code-points.js
-var require_memory_code_points = __commonJS((exports2, module2) => {
-  "use strict";
-  var fs = require("fs");
-  var path = require("path");
-  var bitfield = require_sparse_bitfield();
-  var memory = fs.readFileSync(path.resolve(__dirname, "../code-points.mem"));
-  var offset = 0;
-  function read() {
-    const size = memory.readUInt32BE(offset);
-    offset += 4;
-    const codepoints = memory.slice(offset, offset + size);
-    offset += size;
-    return bitfield({buffer: codepoints});
-  }
-  var unassigned_code_points = read();
-  var commonly_mapped_to_nothing = read();
-  var non_ASCII_space_characters = read();
-  var prohibited_characters = read();
-  var bidirectional_r_al = read();
-  var bidirectional_l = read();
-  module2.exports = {
-    unassigned_code_points,
-    commonly_mapped_to_nothing,
-    non_ASCII_space_characters,
-    prohibited_characters,
-    bidirectional_r_al,
-    bidirectional_l
-  };
-});
-
-// node_modules/saslprep/index.js
-var require_saslprep = __commonJS((exports2, module2) => {
-  "use strict";
-  var {
-    unassigned_code_points,
-    commonly_mapped_to_nothing,
-    non_ASCII_space_characters,
-    prohibited_characters,
-    bidirectional_r_al,
-    bidirectional_l
-  } = require_memory_code_points();
-  module2.exports = saslprep;
-  var mapping2space = non_ASCII_space_characters;
-  var mapping2nothing = commonly_mapped_to_nothing;
-  var getCodePoint = (character) => character.codePointAt(0);
-  var first = (x) => x[0];
-  var last = (x) => x[x.length - 1];
-  function toCodePoints(input) {
-    const codepoints = [];
-    const size = input.length;
-    for (let i = 0; i < size; i += 1) {
-      const before = input.charCodeAt(i);
-      if (before >= 55296 && before <= 56319 && size > i + 1) {
-        const next = input.charCodeAt(i + 1);
-        if (next >= 56320 && next <= 57343) {
-          codepoints.push((before - 55296) * 1024 + next - 56320 + 65536);
-          i += 1;
-          continue;
-        }
-      }
-      codepoints.push(before);
-    }
-    return codepoints;
-  }
-  function saslprep(input, opts = {}) {
-    if (typeof input !== "string") {
-      throw new TypeError("Expected string.");
-    }
-    if (input.length === 0) {
-      return "";
-    }
-    const mapped_input = toCodePoints(input).map((character) => mapping2space.get(character) ? 32 : character).filter((character) => !mapping2nothing.get(character));
-    const normalized_input = String.fromCodePoint.apply(null, mapped_input).normalize("NFKC");
-    const normalized_map = toCodePoints(normalized_input);
-    const hasProhibited = normalized_map.some((character) => prohibited_characters.get(character));
-    if (hasProhibited) {
-      throw new Error("Prohibited character, see https://tools.ietf.org/html/rfc4013#section-2.3");
-    }
-    if (opts.allowUnassigned !== true) {
-      const hasUnassigned = normalized_map.some((character) => unassigned_code_points.get(character));
-      if (hasUnassigned) {
-        throw new Error("Unassigned code point, see https://tools.ietf.org/html/rfc4013#section-2.5");
-      }
-    }
-    const hasBidiRAL = normalized_map.some((character) => bidirectional_r_al.get(character));
-    const hasBidiL = normalized_map.some((character) => bidirectional_l.get(character));
-    if (hasBidiRAL && hasBidiL) {
-      throw new Error("String must not contain RandALCat and LCat at the same time, see https://tools.ietf.org/html/rfc3454#section-6");
-    }
-    const isFirstBidiRAL = bidirectional_r_al.get(getCodePoint(first(normalized_input)));
-    const isLastBidiRAL = bidirectional_r_al.get(getCodePoint(last(normalized_input)));
-    if (hasBidiRAL && !(isFirstBidiRAL && isLastBidiRAL)) {
-      throw new Error("Bidirectional RandALCat character must be the first and the last character of the string, see https://tools.ietf.org/html/rfc3454#section-6");
-    }
-    return normalized_input;
-  }
-});
-
 // node_modules/mongodb/lib/core/auth/scram.js
 var require_scram = __commonJS((exports2, module2) => {
   "use strict";
@@ -27454,7 +27125,7 @@ var require_scram = __commonJS((exports2, module2) => {
   var Binary2 = BSON2.Binary;
   var saslprep;
   try {
-    saslprep = require_saslprep();
+    saslprep = require("saslprep");
   } catch (e) {
   }
   var ScramSHA = class extends AuthProvider {
@@ -49944,10 +49615,9 @@ var import_debug2 = __toModule(require_src4());
 var import_mongodb = __toModule(require_mongodb());
 var import_dotenv = __toModule(require_main());
 var import_debug = __toModule(require_src4());
-var DEV_DB_URL = "mongodb://localhost:27017/ScrummyData";
-var PROD_DB_URL = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PW}@profberriercluster.zzyhu.mongodb.net/ScrummyData?retryWrites=true&w=majority`;
 var debug = import_debug.default("bot:db_command_base");
 import_dotenv.default.config();
+var PROD_DB_URL = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PW}@profberriercluster.zzyhu.mongodb.net/ScrummyData?retryWrites=true&w=majority`;
 var DBCommandBase = class extends Command_default {
   constructor(name, alias, description) {
     super(name, alias, description);
@@ -49974,8 +49644,8 @@ var DBCommandBase = class extends Command_default {
   static connect() {
     if (!DBCommandBase.CLIENT_HANDLE) {
       return new Promise((resolve, reject) => {
-        const URL = true ? DEV_DB_URL : PROD_DB_URL;
-        debug(`Connecting to MongoDB '${true ? "DEV server" : "PROD server"}'`);
+        const URL = false ? DEV_DB_URL : PROD_DB_URL;
+        debug(`Connecting to MongoDB '${false ? "DEV server" : "PROD server"}'`);
         const connectPromise = import_mongodb.MongoClient.connect(URL, {useUnifiedTopology: true, useNewUrlParser: true});
         connectPromise.then((result) => {
           DBCommandBase.CLIENT_HANDLE = result;
@@ -50032,7 +49702,7 @@ var DBCommand = class extends DBCommandBase_default {
   }
   createUser(discordID, discordName) {
     return new Promise((resolve, reject) => {
-      DBCommandBase_default.db.collection("Users").insertOne({discordID, discordName, lastPunch: null}, (err, result) => {
+      DBCommandBase_default.db.collection("Users").insertOne({discordID, discordName}, (err, result) => {
         if (err) {
           debug2("Error creating user");
           debug2(err);
@@ -50291,7 +49961,7 @@ bot.on("ready", () => {
   console.info(`Logged in as ${bot.user.tag}!`);
 });
 bot.on("message", (msg) => {
-  const args = msg.content.split(/ +/);
+  const args = msg.content.split(/\s+/);
   const command = args.shift().toLowerCase();
   if (!bot.commands.has(command))
     return;

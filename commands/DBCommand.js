@@ -29,7 +29,7 @@ class DBCommand extends DBCommandBase {
   createUser (discordID, discordName) {
     return new Promise((resolve, reject) => {
       DBCommandBase.db.collection('Users')
-        .insertOne({ discordID, discordName, lastPunch: null }, (err, result) => {
+        .insertOne({ discordID, discordName }, (err, result) => {
           // Check for and handle error
           if (err) {
             debug('Error creating user')

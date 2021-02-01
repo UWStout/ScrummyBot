@@ -1,1 +1,1 @@
-worker: node dist/scrummybot.min.js
+worker: node dist/scrummybot.js

@@ -10521,6 +10521,166 @@ var require_WebSocketPacketManager = __commonJS((exports2, module2) => {
   module2.exports = WebSocketPacketManager;
 });
 
+// node_modules/file-uri-to-path/index.js
+var require_file_uri_to_path = __commonJS((exports2, module2) => {
+  var sep = require("path").sep || "/";
+  module2.exports = fileUriToPath;
+  function fileUriToPath(uri) {
+    if (typeof uri != "string" || uri.length <= 7 || uri.substring(0, 7) != "file://") {
+      throw new TypeError("must pass in a file:// URI to convert to a file path");
+    }
+    var rest = decodeURI(uri.substring(7));
+    var firstSlash = rest.indexOf("/");
+    var host = rest.substring(0, firstSlash);
+    var path = rest.substring(firstSlash + 1);
+    if (host == "localhost")
+      host = "";
+    if (host) {
+      host = sep + sep + host;
+    }
+    path = path.replace(/^(.+)\|/, "$1:");
+    if (sep == "\\") {
+      path = path.replace(/\//g, "\\");
+    }
+    if (/^.+\:/.test(path)) {
+    } else {
+      path = sep + path;
+    }
+    return host + path;
+  }
+});
+
+// node_modules/bindings/bindings.js
+var require_bindings = __commonJS((exports2, module2) => {
+  var fs = require("fs");
+  var path = require("path");
+  var fileURLToPath = require_file_uri_to_path();
+  var join = path.join;
+  var dirname = path.dirname;
+  var exists = fs.accessSync && function(path2) {
+    try {
+      fs.accessSync(path2);
+    } catch (e) {
+      return false;
+    }
+    return true;
+  } || fs.existsSync || path.existsSync;
+  var defaults = {
+    arrow: process.env.NODE_BINDINGS_ARROW || " \u2192 ",
+    compiled: process.env.NODE_BINDINGS_COMPILED_DIR || "compiled",
+    platform: process.platform,
+    arch: process.arch,
+    nodePreGyp: "node-v" + process.versions.modules + "-" + process.platform + "-" + process.arch,
+    version: process.versions.node,
+    bindings: "bindings.node",
+    try: [
+      ["module_root", "build", "bindings"],
+      ["module_root", "build", "Debug", "bindings"],
+      ["module_root", "build", "Release", "bindings"],
+      ["module_root", "out", "Debug", "bindings"],
+      ["module_root", "Debug", "bindings"],
+      ["module_root", "out", "Release", "bindings"],
+      ["module_root", "Release", "bindings"],
+      ["module_root", "build", "default", "bindings"],
+      ["module_root", "compiled", "version", "platform", "arch", "bindings"],
+      ["module_root", "addon-build", "release", "install-root", "bindings"],
+      ["module_root", "addon-build", "debug", "install-root", "bindings"],
+      ["module_root", "addon-build", "default", "install-root", "bindings"],
+      ["module_root", "lib", "binding", "nodePreGyp", "bindings"]
+    ]
+  };
+  function bindings(opts) {
+    if (typeof opts == "string") {
+      opts = {bindings: opts};
+    } else if (!opts) {
+      opts = {};
+    }
+    Object.keys(defaults).map(function(i2) {
+      if (!(i2 in opts))
+        opts[i2] = defaults[i2];
+    });
+    if (!opts.module_root) {
+      opts.module_root = exports2.getRoot(exports2.getFileName());
+    }
+    if (path.extname(opts.bindings) != ".node") {
+      opts.bindings += ".node";
+    }
+    var requireFunc = typeof __webpack_require__ === "function" ? __non_webpack_require__ : require;
+    var tries = [], i = 0, l = opts.try.length, n, b, err;
+    for (; i < l; i++) {
+      n = join.apply(null, opts.try[i].map(function(p) {
+        return opts[p] || p;
+      }));
+      tries.push(n);
+      try {
+        b = opts.path ? requireFunc.resolve(n) : requireFunc(n);
+        if (!opts.path) {
+          b.path = n;
+        }
+        return b;
+      } catch (e) {
+        if (e.code !== "MODULE_NOT_FOUND" && e.code !== "QUALIFIED_PATH_RESOLUTION_FAILED" && !/not find/i.test(e.message)) {
+          throw e;
+        }
+      }
+    }
+    err = new Error("Could not locate the bindings file. Tried:\n" + tries.map(function(a) {
+      return opts.arrow + a;
+    }).join("\n"));
+    err.tries = tries;
+    throw err;
+  }
+  module2.exports = exports2 = bindings;
+  exports2.getFileName = function getFileName(calling_file) {
+    var origPST = Error.prepareStackTrace, origSTL = Error.stackTraceLimit, dummy = {}, fileName;
+    Error.stackTraceLimit = 10;
+    Error.prepareStackTrace = function(e, st) {
+      for (var i = 0, l = st.length; i < l; i++) {
+        fileName = st[i].getFileName();
+        if (fileName !== __filename) {
+          if (calling_file) {
+            if (fileName !== calling_file) {
+              return;
+            }
+          } else {
+            return;
+          }
+        }
+      }
+    };
+    Error.captureStackTrace(dummy);
+    dummy.stack;
+    Error.prepareStackTrace = origPST;
+    Error.stackTraceLimit = origSTL;
+    var fileSchema = "file://";
+    if (fileName.indexOf(fileSchema) === 0) {
+      fileName = fileURLToPath(fileName);
+    }
+    return fileName;
+  };
+  exports2.getRoot = function getRoot(file) {
+    var dir = dirname(file), prev;
+    while (true) {
+      if (dir === ".") {
+        dir = process.cwd();
+      }
+      if (exists(join(dir, "package.json")) || exists(join(dir, "node_modules"))) {
+        return dir;
+      }
+      if (prev === dir) {
+        throw new Error('Could not find module root given file: "' + file + '". Do you have a `package.json` file? ');
+      }
+      prev = dir;
+      dir = join(dir, "..");
+    }
+  };
+});
+
+// node_modules/erlpack/js/index.js
+var require_js = __commonJS((exports2, module2) => {
+  module2.exports = require_bindings()("erlpack");
+});
+
 // node_modules/async-limiter/index.js
 var require_async_limiter = __commonJS((exports2, module2) => {
   "use strict";
@@ -12549,7 +12709,7 @@ var require_WebSocketConnection = __commonJS((exports2, module2) => {
   var PacketManager = require_WebSocketPacketManager();
   var erlpack = function findErlpack() {
     try {
-      const e = require("erlpack");
+      const e = require_js();
       if (!e.pack)
         return null;
       return e;

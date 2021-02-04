@@ -49777,6 +49777,7 @@ var import_dotenv = __toModule(require_main());
 var import_debug = __toModule(require_src4());
 var debug = import_debug.default("bot:db_command_base");
 import_dotenv.default.config();
+var DEV_DB_URL = "mongodb://localhost:27017/ScrummyData";
 var PROD_DB_URL = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PW}@profberriercluster.zzyhu.mongodb.net/ScrummyData?retryWrites=true&w=majority`;
 var DBCommandBase = class extends Command_default {
   constructor(name, alias, description) {
@@ -49804,8 +49805,8 @@ var DBCommandBase = class extends Command_default {
   static connect() {
     if (!DBCommandBase.CLIENT_HANDLE) {
       return new Promise((resolve, reject) => {
-        const URL = false ? DEV_DB_URL : PROD_DB_URL;
-        debug(`Connecting to MongoDB '${false ? "DEV server" : "PROD server"}'`);
+        const URL = true ? DEV_DB_URL : PROD_DB_URL;
+        debug(`Connecting to MongoDB '${true ? "DEV server" : "PROD server"}'`);
         const connectPromise = import_mongodb.MongoClient.connect(URL, {useUnifiedTopology: true, useNewUrlParser: true});
         connectPromise.then((result) => {
           DBCommandBase.CLIENT_HANDLE = result;
@@ -49856,7 +49857,17 @@ var DBCommand = class extends DBCommandBase_default {
         if (!result) {
           return resolve(false);
         }
-        return resolve(result._id);
+        if (result.timeCardVersion === 1) {
+          this.upgradeUserTimeCard(result._id).then((result2) => {
+            return resolve(result2._id);
+          }).catch((err2) => {
+            debug2("Error upgrading timecard");
+            debug2(err2);
+            return reject(err2);
+          });
+        } else {
+          return resolve(result._id);
+        }
       });
     });
   }
@@ -49872,38 +49883,102 @@ var DBCommand = class extends DBCommandBase_default {
       });
     });
   }
-  getUserTimeCard(dbID, serverID) {
+  upgradeUserTimeCard(dbID) {
     return new Promise((resolve, reject) => {
       DBCommandBase_default.db.collection("Users").aggregate([
         {$match: {_id: dbID}},
-        {
-          $project: {
-            timeCard: {
-              $filter: {
-                input: "$timeCard",
-                as: "punch",
-                cond: {$eq: ["$$punch.serverID", serverID]}
-              }
-            }
-          }
-        }
+        {$unwind: {path: "$timeCard"}},
+        {$project: {_id: 0, timeCard: 1}}
       ], (err, cursor) => {
         if (err || !cursor) {
-          debug2("Error getting user's last punch");
+          debug2("Error getting user's time card");
           debug2(err);
           return reject(err);
         }
-        cursor.toArray((err2, doc) => {
+        cursor.toArray((err2, docs) => {
           if (err2) {
-            debug2("Error converting to array");
+            debug2("Error converting time card cursor to array for update");
             debug2(err2);
             return reject(err2);
           }
-          if (!doc || !doc[0] || !doc[0].timeCard) {
+          const newTimeCard = docs.reduce((accumulate, curVal) => {
+            if (!accumulate[curVal.timeCard.serverID]) {
+              accumulate[curVal.timeCard.serverID] = [];
+            }
+            accumulate[curVal.timeCard.serverID].push({
+              punch: curVal.timeCard.punch,
+              time: curVal.timeCard.time
+            });
+            return accumulate;
+          }, {});
+          DBCommandBase_default.db.collection("Users").updateOne({_id: dbID}, {$set: {timeCardVersion: 2, timeCard: newTimeCard}}, (err3, result) => {
+            if (err3) {
+              debug2("Error updating time card");
+              debug2(err3);
+              return reject(err3);
+            }
+            if (result.modifiedCount !== 1) {
+              return resolve(false);
+            }
+            return resolve(true);
+          });
+        });
+      });
+    });
+  }
+  getUsersOnServer(serverID) {
+    const fieldMatch = {};
+    fieldMatch[`timeCard.${serverID}`] = {$exists: true};
+    return new Promise((resolve, reject) => {
+      DBCommandBase_default.db.collection("Users").aggregate([
+        {$match: fieldMatch},
+        {$project: {discordName: 1, timeCard: {$last: `$timeCard.${serverID}`}}}
+      ], (err, cursor) => {
+        if (err) {
+          debug2("Error retrieving users on server");
+          debug2(err);
+          return reject(err);
+        }
+        cursor.toArray((err2, docs) => {
+          if (err2) {
+            debug2("Converting users to array");
+            debug2(err2);
+            return reject(err2);
+          }
+          if (!docs || !Array.isArray(docs)) {
             return resolve([]);
           }
-          return resolve(doc[0].timeCard);
+          return resolve(docs);
         });
+      });
+    });
+  }
+  getUserTimeCard(dbID, serverID) {
+    return new Promise((resolve, reject) => {
+      DBCommandBase_default.db.collection("Users").findOne({_id: dbID}, {projection: {timeCard: `$timeCard.${serverID}`}}, (err, result) => {
+        if (err) {
+          debug2("Error retrieving timecard");
+          debug2(err);
+          return reject(err);
+        }
+        if (!result || !result.timeCard) {
+          return resolve([]);
+        }
+        return resolve(result.timeCard);
+      });
+    });
+  }
+  setUserTimecard(dbID, serverID, newTimeCard) {
+    const setObj = {};
+    setObj[`timeCard.${serverID}`] = newTimeCard;
+    return new Promise((resolve, reject) => {
+      DBCommandBase_default.db.collection("Users").updateOne({_id: dbID}, {$set: setObj}, (err, result) => {
+        if (err || !result || result.modifiedCount !== 1) {
+          debug2("Error setting/updating timecard");
+          debug2(err);
+          return reject(err);
+        }
+        return resolve();
       });
     });
   }
@@ -49921,8 +49996,9 @@ var DBCommand = class extends DBCommandBase_default {
   }
   punchUserTimeCard(dbID, serverID, punchStr) {
     return new Promise((resolve, reject) => {
-      const punchObj = {serverID, punch: punchStr, time: new Date()};
-      DBCommandBase_default.db.collection("Users").updateOne({_id: dbID}, {$push: {timeCard: punchObj}}, (err, result) => {
+      const pushOp = {};
+      pushOp[`timeCard.${serverID}`] = {punch: punchStr, time: new Date()};
+      DBCommandBase_default.db.collection("Users").updateOne({_id: dbID}, {$push: pushOp}, (err, result) => {
         if (err) {
           debug2("Error punching time card");
           debug2(err);
@@ -49941,27 +50017,45 @@ var DBCommand_default = DBCommand;
 // commands/util.js
 var d3 = __toModule(require_d3_time());
 var dateFormatter = Intl.DateTimeFormat("en-US", {
+  timeZone: "America/Chicago",
   weekday: "short",
   month: "short",
   day: "numeric",
   hour: "numeric",
   minute: "numeric"
 });
+var DAY_NAMES = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday"
+];
 function formatDate(date) {
-  return dateFormatter.format(date);
+  return "`" + dateFormatter.format(date) + "`";
 }
 function formatDuration(start, end = Date.now()) {
   let minutes = start;
   if (typeof start === "object" && start instanceof Date) {
     minutes = minutesBetween(start, end);
   }
-  return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
+  return `\`${Math.floor(minutes / 60)}h ${minutes % 60}m\``;
 }
 function minutesBetween(start, end = Date.now()) {
   return d3.timeMinute.range(start, end).length;
 }
+function daysBetween(dayName, start, end = Date.now()) {
+  const dayNameAdj = dayName.substr(0, 1).toUpperCase() + dayName.substr(1).toLowerCase();
+  if (DAY_NAMES.indexOf(dayNameAdj) === -1) {
+    console.error('Error: Unknown day name"' + dayName + "'");
+    return -1;
+  }
+  return d3[`time${dayNameAdj}`].range(start, end).length;
+}
 function mondaysBetween(start, end = Date.now()) {
-  return d3.timeMonday.range(start, end).length;
+  return daysBetween("Monday", start, end);
 }
 function sumPunches(punches) {
   let minutes = 0;
@@ -50072,7 +50166,7 @@ var StatusCommand = class extends DBCommand_default {
         return;
       }
       let mondayIndex = timeCard.length - 1;
-      while (mondayIndex > 0 && mondaysBetween(timeCard[mondayIndex].time) === 0) {
+      while (mondayIndex >= 0 && mondaysBetween(timeCard[mondayIndex].time) === 0) {
         mondayIndex--;
       }
       const timeCardWeek = timeCard.slice(mondayIndex + 1);
@@ -50100,8 +50194,192 @@ Since Monday, you have worked for ${formatDuration(minutesWeek)}`;
 var Status = new StatusCommand();
 var status_default = Status;
 
+// commands/scrummy/list.js
+var ListCommand = class extends DBCommand_default {
+  constructor() {
+    super("!list", ["!ls"], 'Param (optional): n, List your "n" most recent punches on this server (defaults to 4).');
+  }
+  async execute(msg, args) {
+    if (!msg.guild) {
+      msg.reply("This command only works in a specific server channel");
+      return;
+    }
+    try {
+      const dbId = await this.checkIfUserExists(msg.author.id);
+      if (!dbId) {
+        msg.reply("You haven't used ScrummyBot to track time yet. Try !clockin first.");
+        return;
+      }
+      let timeCard = await this.getUserTimeCard(dbId, msg.guild.id);
+      if (!timeCard || timeCard.length === 0) {
+        msg.reply("You haven't clocked in on this server yet. Try !clockin first.");
+        return;
+      }
+      const count = args[0] && !isNaN(parseInt(args[0])) ? args[0] : 4;
+      if (timeCard.length > count) {
+        timeCard = timeCard.slice(timeCard.length - count);
+      }
+      if (timeCard.length === 0) {
+        msg.reply("The list is empty, try again with a higher number.");
+      } else {
+        const verb = timeCard.length === 1 ? "is" : "are";
+        const plural = timeCard.length === 1 ? "punch" : "punches";
+        let message = `Here ${verb} your last ${timeCard.length} ${plural}`;
+        timeCard.forEach((curPunch, i) => {
+          message += `
+${i + 1}) Clock ${curPunch.punch}: ${formatDate(curPunch.time)}`;
+        });
+        msg.reply(message);
+      }
+    } catch (err) {
+      console.error("Error reporting list");
+      console.error(err);
+    }
+  }
+};
+var List = new ListCommand();
+var list_default = List;
+
+// commands/scrummy/summary.js
+var SummaryCommand = class extends DBCommand_default {
+  constructor() {
+    super("!summary", ["!sum"], "Param: day-of-week, list all times work (and length) back to indicated day (default: sunday).");
+  }
+  async execute(msg, args) {
+    if (!msg.guild) {
+      msg.reply("This command only works in a specific server channel");
+      return;
+    }
+    try {
+      const dbId = await this.checkIfUserExists(msg.author.id);
+      if (!dbId) {
+        msg.reply("You haven't used ScrummyBot to track time yet. Try !clockin first.");
+        return;
+      }
+      const timeCard = await this.getUserTimeCard(dbId, msg.guild.id);
+      if (!timeCard || timeCard.length === 0) {
+        msg.reply("You haven't clocked in on this server yet. Try !clockin first.");
+        return;
+      }
+      const day = args[0] ? args[0] : "sunday";
+      let dayIndex = timeCard.length - 1;
+      while (dayIndex >= 0 && daysBetween(day, timeCard[dayIndex].time) === 0) {
+        dayIndex--;
+      }
+      const timeCardWeek = timeCard.slice(dayIndex + 1);
+      if (timeCardWeek.length === 0) {
+        msg.reply("No tracked work found in that range.");
+      } else {
+        let message = `Here is you summary of work since ${day}:
+`;
+        for (let i = 0; i < timeCardWeek.length - 1; i += 2) {
+          const start = timeCardWeek[i].time;
+          const end = timeCardWeek[i + 1].time;
+          message += `- from ${formatDate(start)} to ${formatDate(end)} you worked for ${formatDuration(start, end)}
+`;
+        }
+        if (timeCardWeek.length % 2 === 1) {
+          const clockIn2 = timeCardWeek[timeCardWeek.length - 1].time;
+          message += `- you clocked in on ${formatDate(clockIn2)} and have been working for ${formatDuration(clockIn2)}
+`;
+        }
+        const minutesWeek = sumPunches(timeCardWeek);
+        message += `TOTAL since ${day}: ${formatDuration(minutesWeek)}`;
+        msg.reply(message);
+      }
+    } catch (err) {
+      console.error("Error reporting summary");
+      console.error(err);
+    }
+  }
+};
+var Summary = new SummaryCommand();
+var summary_default = Summary;
+
+// commands/scrummy/adjust.js
+var AdjustCommand = class extends DBCommand_default {
+  constructor() {
+    super("!adjust", ["!adj"], 'params: <n> <new time>, Adjust a time-card punch to a new time. Use !list to get valid n value. "new time" must be parsable as a JavaScript Date.');
+  }
+  async execute(msg, args) {
+    if (!msg.guild) {
+      msg.reply("This command only works in a specific server channel");
+      return;
+    }
+    if (args.length < 1 || isNaN(args[0])) {
+      msg.reply("Punch index is missing or invalid. Run !list first for some valid indexes.");
+      return;
+    }
+    if (args.length < 2 || isNaN(Date.parse(args[1]))) {
+      msg.reply("New time missing or invalid.\n```Example: 2021-04-02T13:25:30\n         YYYY-MM-DDTHH:MM:SS```\n(note letter T and 24-hour format)");
+      return;
+    }
+    const index = parseInt(args[0]) - 1;
+    const newDate = Date.parse(args[1]);
+    try {
+      const dbId = await this.checkIfUserExists(msg.author.id);
+      if (!dbId) {
+        msg.reply("You haven't used ScrummyBot to track time yet. Try !clockin first.");
+        return;
+      }
+      const timeCard = await this.getUserTimeCard(dbId, msg.guild.id);
+      if (!timeCard || timeCard.length === 0) {
+        msg.reply("You haven't clocked in on this server yet. Try !clockin first.");
+        return;
+      }
+      if (index < 0 || index >= timeCard.length) {
+        msg.reply("Punch index is invalid. Run !list first for some valid indexes.");
+        return;
+      }
+      msg.reply(`Attempting to adjust entry ${index + 1} to time ${formatDate(newDate)} ...`);
+      const newTimeCard = [...timeCard];
+      newTimeCard[index].time = new Date(newDate);
+      await this.setUserTimecard(dbId, msg.guild.id, newTimeCard);
+      msg.reply("Entry updated");
+    } catch (err) {
+      console.error("Error adjusting entry");
+      console.error(err);
+    }
+  }
+};
+var Adjust = new AdjustCommand();
+var adjust_default = Adjust;
+
+// commands/scrummy/users.js
+var UsersCommand = class extends DBCommand_default {
+  constructor() {
+    super("!users", ["!us"], "List all the users on this server and their current status.");
+  }
+  async execute(msg, args) {
+    if (!msg.guild) {
+      msg.reply("This command only works in a specific server channel");
+      return;
+    }
+    try {
+      const allUsers = await this.getUsersOnServer(msg.guild.id);
+      if (!allUsers || allUsers.length === 0) {
+        msg.reply("No users found (that's werid!)");
+        return;
+      }
+      let message = `Scrummy Bot has seen these users on ${msg.guild.name}
+\`\`\``;
+      allUsers.forEach((user) => {
+        message += `- ${user.discordName} is clocked ${user.timeCard.punch}
+`;
+      });
+      message += "```";
+      msg.reply(message);
+    } catch (err) {
+      console.error("Error reporting users");
+      console.error(err);
+    }
+  }
+};
+var Users = new UsersCommand();
+var users_default = Users;
+
 // commands/index.js
-var commands = [ping_default, clockIn_default, clockOut_default, status_default];
+var commands = [ping_default, clockIn_default, clockOut_default, status_default, list_default, summary_default, adjust_default, users_default];
 var BotCommands = new import_discord.default.Collection();
 commands.forEach((cmd) => {
   BotCommands.set(cmd.name, cmd);
@@ -50113,7 +50391,7 @@ var commands_default = BotCommands;
 
 // index.js
 import_dotenv2.default.config();
-var TOKEN = process.env.TOKEN;
+var TOKEN = true ? process.env.DEV_TOKEN : process.env.TOKEN;
 var bot = new import_discord2.default.Client();
 bot.login(TOKEN);
 bot.commands = commands_default;

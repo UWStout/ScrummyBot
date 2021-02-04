@@ -6,9 +6,13 @@ import ping from './scrummy/ping.js'
 import clockIn from './scrummy/clockIn.js'
 import clockOut from './scrummy/clockOut.js'
 import status from './scrummy/status.js'
+import list from './scrummy/list.js'
+import summary from './scrummy/summary.js'
+import adjust from './scrummy/adjust.js'
+import users from './scrummy/users.js'
 
 // Build command array
-const commands = [ping, clockIn, clockOut, status]
+const commands = [ping, clockIn, clockOut, status, list, summary, adjust, users]
 
 // Build command collection
 const BotCommands = new Discord.Collection()

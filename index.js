@@ -7,7 +7,7 @@ import BotCommands from './commands'
 
 // Initialize environment variables
 Dotenv.config()
-const TOKEN = process.env.TOKEN
+const TOKEN = (_DEV_ ? process.env.DEV_TOKEN : process.env.TOKEN)
 
 // Initialize the bot
 const bot = new Discord.Client()

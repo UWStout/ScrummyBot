@@ -35,7 +35,7 @@ class StatusCommand extends DBCommand {
 
       // Find all punches from this week (since most recent monday boundary)
       let mondayIndex = timeCard.length - 1
-      while (mondayIndex > 0 && UTIL.mondaysBetween(timeCard[mondayIndex].time) === 0) {
+      while (mondayIndex >= 0 && UTIL.mondaysBetween(timeCard[mondayIndex].time) === 0) {
         mondayIndex--
       }
       const timeCardWeek = timeCard.slice(mondayIndex + 1)

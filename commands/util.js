@@ -1,6 +1,7 @@
 import * as d3 from 'd3-time'
 
 const dateFormatter = Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/Chicago',
   weekday: 'short',
   month: 'short',
   day: 'numeric',
@@ -8,8 +9,12 @@ const dateFormatter = Intl.DateTimeFormat('en-US', {
   minute: 'numeric'
 })
 
+const DAY_NAMES = [
+  'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
+]
+
 export function formatDate (date) {
-  return dateFormatter.format(date)
+  return '`' + dateFormatter.format(date) + '`'
 }
 
 export function formatDuration (start, end = Date.now()) {
@@ -21,7 +26,7 @@ export function formatDuration (start, end = Date.now()) {
   }
 
   // Count the hours and minutes
-  return `${Math.floor(minutes / 60)}h ${minutes % 60}m`
+  return `\`${Math.floor(minutes / 60)}h ${minutes % 60}m\``
 }
 
 export function minutesBetween (start, end = Date.now()) {
@@ -30,9 +35,19 @@ export function minutesBetween (start, end = Date.now()) {
   return d3.timeMinute.range(start, end).length
 }
 
+export function daysBetween (dayName, start, end = Date.now()) {
+  // How many day boundaries between 'start' and 'end'
+  const dayNameAdj = dayName.substr(0, 1).toUpperCase() + dayName.substr(1).toLowerCase()
+  if (DAY_NAMES.indexOf(dayNameAdj) === -1) {
+    console.error('Error: Unknown day name"' + dayName + "'")
+    return -1
+  }
+
+  return d3[`time${dayNameAdj}`].range(start, end).length
+}
+
 export function mondaysBetween (start, end = Date.now()) {
-  // How many monday boundaries between 'start' and 'end'
-  return d3.timeMonday.range(start, end).length
+  return daysBetween('Monday', start, end)
 }
 
 // Entries in 'punches' must be sorted in 'in'/'out' pairs

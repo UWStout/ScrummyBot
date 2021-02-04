@@ -154,6 +154,80 @@ class DBCommand extends DBCommandBase {
     })
   }
 
+  getServerDataInRange (start, end, firstID, secondID) {
+    // Check parameters
+    // - If secondID is undefined/nullish then treat firstID as serverID
+    // - If secondID is not null, then treat it as the serverID and the first as the userID
+    const serverID = secondID || firstID
+    const userID = (secondID ? firstID : null)
+
+    // Build query object for existence of server and for userID if it was provided
+    const fieldMatch = {}
+    fieldMatch[`timeCard.${serverID}`] = { $exists: true }
+    if (userID) { fieldMatch._id = userID }
+
+    return new Promise((resolve, reject) => {
+      // Retrieve a punch card with only entries for this server
+      DBCommandBase.db.collection('Users')
+        .aggregate([
+          // Grab only the timecard of this server (and possibly only one user)
+          { $match: fieldMatch },
+
+          // Filter out time card entries not in date range (and other user fields)
+          {
+            $project: {
+              discordName: 1,
+              timeCard: {
+                $filter: {
+                  input: `$timeCard.${serverID}`,
+                  as: 'punch',
+                  cond: {
+                    $and: [
+                      { $gte: ['$$punch.time', start] },
+                      { $lte: ['$$punch.time', end] }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+
+          // Merge the user fields into the time card entires as one object
+          { $unwind: '$timeCard' },
+          {
+            $replaceRoot: {
+              newRoot: { $mergeObjects: ['$$ROOT', '$timeCard'] }
+            }
+          },
+          { $project: { timeCard: 0 } }
+        ], (err, cursor) => {
+          // Check for and handle errors
+          if (err) {
+            debug('Error retrieving range data')
+            debug(err)
+            return reject(err)
+          }
+
+          cursor.toArray((err, docs) => {
+            // Check for and handle errors
+            if (err) {
+              debug('Error converting range data to array')
+              debug(err)
+              return reject(err)
+            }
+
+            // If nothing found, return empty array
+            if (!docs || !Array.isArray(docs)) {
+              return resolve([])
+            }
+
+            // Return the users
+            return resolve(docs)
+          })
+        })
+    })
+  }
+
   getOldUsers () {
     return new Promise((resolve, reject) => {
       // Retrieve a punch card with only entries for this server

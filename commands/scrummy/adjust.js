@@ -33,6 +33,9 @@ class AdjustCommand extends DBCommand {
       return
     }
 
+    // Ensure date provided uses local time zone
+    if (args[1].indexOf('T') === -1) { args[1] += 'T00:00:00' }
+
     // Parse arguments
     const index = parseInt(args[0]) - 1
     const newDate = Date.parse(args[1])

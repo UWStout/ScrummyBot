@@ -8,9 +8,9 @@
     "build": "run-s clean build-bot",
     "clean": "rimraf dist",
     "devbuild": "run-s clean devbuild-bot devstart",
-    "devbuild-bot": "esbuild --define:_DEV_=true --platform=node --external:saslprep --external:erlpak --external:zlib-sync --external:bufferutil --external:utf-8-validate --bundle --outfile=dist/scrummybot.js index.js",
+    "devbuild-bot": "esbuild --define:_DEV_=true --platform=node --sourcemap --external:node-opus --external:opusscript --external:@discordjs/opus --external:saslprep --external:erlpak --external:zlib-sync --external:bufferutil --external:utf-8-validate --bundle --outfile=dist/scrummybot.js index.js",
     "build-bot": "esbuild --define:_DEV_=false --platform=node --external:saslprep --external:erlpak --external:zlib-sync --external:bufferutil --external:utf-8-validate --bundle --outfile=dist/scrummybot.js index.js",
-    "devstart": "bash -c 'DEBUG=bot,bot:* DEBUG_HIDE_DATE=true DEBUG_COLORS=true node dist/scrummybot.js'",
+    "devstart": "bash -c 'DEBUG=bot,bot:* DEBUG_HIDE_DATE=true DEBUG_COLORS=true node --enable-source-maps dist/scrummybot.js'",
     "start": "bash -c 'DEBUG=bot,bot:* DEBUG_HIDE_DATE=true DEBUG_COLORS=true node dist/scrummybot.js"
   },
   "engines": {
@@ -41,7 +41,6 @@
     "eslint-plugin-import": "^2.22.1",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^4.2.1",
-    "luxon": "^1.25.0",
     "mongodb": "^3.6.3",
     "nodemon": "^2.0.7",
     "npm-run-all": "^4.1.5",
@@ -49,6 +48,8 @@
   },
   "dependencies": {
     "bufferutil": "^4.0.3",
+    "chart.js": "^2.9.4",
+    "chartjs-node-canvas": "^3.1.0",
     "erlpack": "github:discord/erlpack",
     "saslprep": "^1.0.3",
     "utf-8-validate": "^5.0.4",

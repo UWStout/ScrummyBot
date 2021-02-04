@@ -13,17 +13,22 @@ import list from './scrummy/list.js'
 import summary from './scrummy/summary.js'
 import adjust from './scrummy/adjust.js'
 import users from './scrummy/users.js'
+import dataUser from './scrummy/dataUser.js'
+import dataServer from './scrummy/dataServer.js'
 
 // Build command array
-const commands = [ping, clockIn, clockOut, status, list, summary, adjust, users]
+const commands = [ping, clockIn, clockOut, status, list, summary, adjust, users, dataUser, dataServer]
 
 function makeHelpString (command) {
+  // Build string list of commands
   let cmdList = command.name
   if (command.alias.length > 0) { cmdList += ', ' + command.alias.join(', ') }
 
+  // Build string list of parameters
   let params = '[n/a]'
   if (command.params.length > 0) { params = command.params.join(', ') }
 
+  // Setup description with line breaks and spacing
   let description = ''
   let first = true
   command.description.forEach((descLine) => {
@@ -35,6 +40,7 @@ function makeHelpString (command) {
     first = false
   })
 
+  // Put it all together
   return cmdList.padEnd(20, ' ') + ' ' + params.padEnd(13, ' ') + ' ' + description + '\n'
 }
 

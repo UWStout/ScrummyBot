@@ -9,7 +9,7 @@
     "clean": "rimraf dist",
     "devbuild": "run-s clean devbuild-bot devstart",
     "devbuild-bot": "esbuild --define:_DEV_=true --platform=node --sourcemap --external:node-opus --external:opusscript --external:@discordjs/opus --external:saslprep --external:erlpak --external:zlib-sync --external:bufferutil --external:utf-8-validate --bundle --outfile=dist/scrummybot.js index.js",
-    "build-bot": "esbuild --define:_DEV_=false --platform=node --external:saslprep --external:erlpak --external:zlib-sync --external:bufferutil --external:utf-8-validate --bundle --outfile=dist/scrummybot.js index.js",
+    "build-bot": "esbuild --define:_DEV_=false --platform=node --external:node-opus --external:opusscript --external:@discordjs/opus --external:saslprep --external:erlpak --external:zlib-sync --external:bufferutil --external:utf-8-validate --bundle --outfile=dist/scrummybot.js index.js",
     "devstart": "bash -c 'DEBUG=bot,bot:* DEBUG_HIDE_DATE=true DEBUG_COLORS=true node --enable-source-maps dist/scrummybot.js'",
     "start": "bash -c 'DEBUG=bot,bot:* DEBUG_HIDE_DATE=true DEBUG_COLORS=true node dist/scrummybot.js"
   },

@@ -29,7 +29,7 @@ var __toModule = (module2) => {
 
 // node_modules/dotenv/lib/main.js
 var require_main = __commonJS((exports2, module2) => {
-  var fs2 = require("fs");
+  var fs = require("fs");
   var path = require("path");
   function log(message) {
     console.log(`[dotenv][DEBUG] ${message}`);
@@ -80,7 +80,7 @@ var require_main = __commonJS((exports2, module2) => {
       }
     }
     try {
-      const parsed = parse(fs2.readFileSync(dotenvPath, {encoding}), {debug: debug3});
+      const parsed = parse(fs.readFileSync(dotenvPath, {encoding}), {debug: debug3});
       Object.keys(parsed).forEach(function(key) {
         if (!Object.prototype.hasOwnProperty.call(process.env, key)) {
           process.env[key] = parsed[key];
@@ -1743,7 +1743,7 @@ var require_ResponseStream = __commonJS((exports2, module2) => {
 
 // node_modules/snekfetch/src/node/transports/file.js
 var require_file = __commonJS((exports2, module2) => {
-  var fs2 = require("fs");
+  var fs = require("fs");
   var path = require("path");
   var mime = require_mime();
   var EventEmitter2 = require("events");
@@ -1751,7 +1751,7 @@ var require_file = __commonJS((exports2, module2) => {
   var methods = {
     GET: (filename, req) => {
       req.end = () => {
-        const stream = should404(filename) ? new ResponseStream().error(404, `ENOENT: no such file or directory, open '${filename}'`) : fs2.createReadStream(filename);
+        const stream = should404(filename) ? new ResponseStream().error(404, `ENOENT: no such file or directory, open '${filename}'`) : fs.createReadStream(filename);
         req.res = stream;
         stream.headers = {
           "content-length": 0,
@@ -1779,7 +1779,7 @@ var require_file = __commonJS((exports2, module2) => {
       };
       req.end = (data) => {
         chunks.push(data);
-        const stream = fs2.createWriteStream(filename);
+        const stream = fs.createWriteStream(filename);
         const standin = new ResponseStream();
         req.res = standin;
         standin.headers = {
@@ -1811,7 +1811,7 @@ var require_file = __commonJS((exports2, module2) => {
           "content-length": 0,
           "content-type": mime.lookup(path.extname(filename))
         };
-        fs2.unlink(filename, (err) => {
+        fs.unlink(filename, (err) => {
           req.emit("response", err ? stream.error(400, err.message) : stream);
         });
       };
@@ -1838,7 +1838,7 @@ var require_file = __commonJS((exports2, module2) => {
   }
   function should404(p) {
     try {
-      return fs2.lstatSync(p).isDirectory();
+      return fs.lstatSync(p).isDirectory();
     } catch (err) {
       return true;
     }
@@ -4389,7 +4389,7 @@ var require_Attachment = __commonJS((exports2, module2) => {
 
 // node_modules/discord.js/src/structures/MessageEmbed.js
 var require_MessageEmbed = __commonJS((exports2, module2) => {
-  var MessageEmbed2 = class {
+  var MessageEmbed = class {
     constructor(message, data) {
       Object.defineProperty(this, "client", {value: message.client});
       this.message = message;
@@ -4503,14 +4503,14 @@ var require_MessageEmbed = __commonJS((exports2, module2) => {
       this.proxyIconUrl = data.proxy_icon_url;
     }
   };
-  MessageEmbed2.Thumbnail = MessageEmbedThumbnail;
-  MessageEmbed2.Image = MessageEmbedImage;
-  MessageEmbed2.Video = MessageEmbedVideo;
-  MessageEmbed2.Provider = MessageEmbedProvider;
-  MessageEmbed2.Author = MessageEmbedAuthor;
-  MessageEmbed2.Field = MessageEmbedField;
-  MessageEmbed2.Footer = MessageEmbedFooter;
-  module2.exports = MessageEmbed2;
+  MessageEmbed.Thumbnail = MessageEmbedThumbnail;
+  MessageEmbed.Image = MessageEmbedImage;
+  MessageEmbed.Video = MessageEmbedVideo;
+  MessageEmbed.Provider = MessageEmbedProvider;
+  MessageEmbed.Author = MessageEmbedAuthor;
+  MessageEmbed.Field = MessageEmbedField;
+  MessageEmbed.Footer = MessageEmbedFooter;
+  module2.exports = MessageEmbed;
 });
 
 // node_modules/discord.js/src/structures/MessageMentions.js
@@ -4613,7 +4613,7 @@ var require_MessageMentions = __commonJS((exports2, module2) => {
 // node_modules/discord.js/src/structures/MessageAttachment.js
 var require_MessageAttachment = __commonJS((exports2, module2) => {
   var {basename} = require("path");
-  var MessageAttachment2 = class {
+  var MessageAttachment = class {
     constructor(message, data) {
       Object.defineProperty(this, "client", {value: message.client});
       this.message = message;
@@ -4632,7 +4632,7 @@ var require_MessageAttachment = __commonJS((exports2, module2) => {
       return basename(this.url).startsWith("SPOILER_");
     }
   };
-  module2.exports = MessageAttachment2;
+  module2.exports = MessageAttachment;
 });
 
 // node_modules/discord.js/src/util/Snowflake.js
@@ -6916,7 +6916,7 @@ var require_Channel = __commonJS((exports2, module2) => {
 // node_modules/discord.js/src/client/ClientDataResolver.js
 var require_ClientDataResolver = __commonJS((exports2, module2) => {
   var path = require("path");
-  var fs2 = require("fs");
+  var fs = require("fs");
   var snekfetch = require_snekfetch();
   var Constants2 = require_Constants();
   var convertToBuffer = require_Util().convertToBuffer;
@@ -7042,12 +7042,12 @@ var require_ClientDataResolver = __commonJS((exports2, module2) => {
         }
         return new Promise((resolve, reject) => {
           const file = path.resolve(resource);
-          fs2.stat(file, (err, stats) => {
+          fs.stat(file, (err, stats) => {
             if (err)
               return reject(err);
             if (!stats || !stats.isFile())
               return reject(new Error(`The file could not be found: ${file}`));
-            fs2.readFile(file, (err2, data) => {
+            fs.readFile(file, (err2, data) => {
               if (err2)
                 reject(err2);
               else
@@ -7106,7 +7106,7 @@ var require_ClientDataResolver = __commonJS((exports2, module2) => {
 // node_modules/discord.js/src/structures/RichEmbed.js
 var require_RichEmbed = __commonJS((exports2, module2) => {
   var Attachment = require_Attachment();
-  var MessageEmbed2 = require_MessageEmbed();
+  var MessageEmbed = require_MessageEmbed();
   var util = require_Util();
   var ClientDataResolver2;
   var RichEmbed = class {
@@ -7225,11 +7225,11 @@ var require_RichEmbed = __commonJS((exports2, module2) => {
         author: this.author ? {
           name: this.author.name,
           url: this.author.url,
-          icon_url: this.author instanceof MessageEmbed2.Author ? this.author.iconURL : this.author.icon_url
+          icon_url: this.author instanceof MessageEmbed.Author ? this.author.iconURL : this.author.icon_url
         } : null,
         footer: this.footer ? {
           text: this.footer.text,
-          icon_url: this.footer instanceof MessageEmbed2.Footer ? this.footer.iconURL : this.footer.icon_url
+          icon_url: this.footer instanceof MessageEmbed.Footer ? this.footer.iconURL : this.footer.icon_url
         } : null
       };
     }
@@ -11175,19 +11175,19 @@ var require_file_uri_to_path = __commonJS((exports2, module2) => {
 
 // node_modules/bindings/bindings.js
 var require_bindings = __commonJS((exports2, module2) => {
-  var fs2 = require("fs");
+  var fs = require("fs");
   var path = require("path");
   var fileURLToPath = require_file_uri_to_path();
   var join = path.join;
   var dirname = path.dirname;
-  var exists = fs2.accessSync && function(path2) {
+  var exists = fs.accessSync && function(path2) {
     try {
-      fs2.accessSync(path2);
+      fs.accessSync(path2);
     } catch (e) {
       return false;
     }
     return true;
-  } || fs2.existsSync || path.existsSync;
+  } || fs.existsSync || path.existsSync;
   var defaults = {
     arrow: process.env.NODE_BINDINGS_ARROW || " \u2192 ",
     compiled: process.env.NODE_BINDINGS_COMPILED_DIR || "compiled",
@@ -19144,7 +19144,7 @@ var require_Shard = __commonJS((exports2, module2) => {
 // node_modules/discord.js/src/sharding/ShardingManager.js
 var require_ShardingManager = __commonJS((exports2, module2) => {
   var path = require("path");
-  var fs2 = require("fs");
+  var fs = require("fs");
   var EventEmitter2 = require("events").EventEmitter;
   var Shard = require_Shard();
   var Collection2 = require_Collection();
@@ -19163,7 +19163,7 @@ var require_ShardingManager = __commonJS((exports2, module2) => {
         throw new Error("File must be specified.");
       if (!path.isAbsolute(file))
         this.file = path.resolve(process.cwd(), file);
-      const stats = fs2.statSync(this.file);
+      const stats = fs.statSync(this.file);
       if (!stats.isFile())
         throw new Error("File path does not point to a file.");
       this.totalShards = options.totalShards;
@@ -24444,11 +24444,11 @@ var require_semver = __commonJS((exports2, module2) => {
 // node_modules/require_optional/index.js
 var require_require_optional = __commonJS((exports2, module2) => {
   var path = require("path");
-  var fs2 = require("fs");
+  var fs = require("fs");
   var f = require("util").format;
   var resolveFrom = require_resolve_from();
   var semver = require_semver();
-  var exists = fs2.existsSync || path.existsSync;
+  var exists = fs.existsSync || path.existsSync;
   var find_package_json = function(location) {
     var found = false;
     while (!found) {
@@ -24472,7 +24472,7 @@ var require_require_optional = __commonJS((exports2, module2) => {
         currentModule = currentModule.parent;
         continue;
       }
-      var object = JSON.parse(fs2.readFileSync(f("%s/package.json", location)));
+      var object = JSON.parse(fs.readFileSync(f("%s/package.json", location)));
       var parts = name.split(/\//);
       if (!object.peerOptionalDependencies || object.peerOptionalDependencies && !object.peerOptionalDependencies[parts[0]]) {
         currentModule = currentModule.parent;
@@ -24515,7 +24515,7 @@ var require_require_optional = __commonJS((exports2, module2) => {
     if (!location) {
       throw new Error("package.json can not be located");
     }
-    var dependentOnModule = JSON.parse(fs2.readFileSync(f("%s/package.json", location)));
+    var dependentOnModule = JSON.parse(fs.readFileSync(f("%s/package.json", location)));
     var version = dependentOnModule.version;
     if (semver.satisfies(version, expectedVersions) == false && options.strict) {
       var error = new Error(f("optional dependency [%s] found but version [%s] did not satisfy constraint [%s]", parts[0], version, expectedVersions));
@@ -47587,7 +47587,7 @@ var require_connect2 = __commonJS((exports2, module2) => {
   var Server = require_server3();
   var ServerSessionPool = require_core().Sessions.ServerSessionPool;
   var emitDeprecationWarning = require_utils4().emitDeprecationWarning;
-  var fs2 = require("fs");
+  var fs = require("fs");
   var WriteConcern = require_write_concern();
   var BSON2 = require_utils3().retrieveBSON();
   var CMAP_EVENT_NAMES = require_events2().CMAP_EVENT_NAMES;
@@ -47793,7 +47793,7 @@ var require_connect2 = __commonJS((exports2, module2) => {
     }
     ["sslCA", "sslKey", "sslCert"].forEach((optionName) => {
       if (options[optionName]) {
-        options[optionName] = fs2.readFileSync(options[optionName]);
+        options[optionName] = fs.readFileSync(options[optionName]);
       }
     });
   }
@@ -48501,7 +48501,7 @@ var require_grid_store = __commonJS((exports2, module2) => {
   var ObjectID2 = require_core().BSON.ObjectID;
   var ReadPreference = require_core().ReadPreference;
   var Buffer2 = require_safe_buffer().Buffer;
-  var fs2 = require("fs");
+  var fs = require("fs");
   var f = require("util").format;
   var util = require("util");
   var MongoError = require_core().MongoError;
@@ -48681,7 +48681,7 @@ var require_grid_store = __commonJS((exports2, module2) => {
   };
   var writeFile = function(self2, file, options, callback) {
     if (typeof file === "string") {
-      fs2.open(file, "r", function(err, fd) {
+      fs.open(file, "r", function(err, fd) {
         if (err)
           return callback(err);
         self2.writeFile(fd, callback);
@@ -48691,14 +48691,14 @@ var require_grid_store = __commonJS((exports2, module2) => {
     self2.open(function(err, self3) {
       if (err)
         return callback(err, self3);
-      fs2.fstat(file, function(err2, stats) {
+      fs.fstat(file, function(err2, stats) {
         if (err2)
           return callback(err2, self3);
         var offset = 0;
         var index = 0;
         var writeChunk = function() {
           var _buffer = Buffer2.alloc(self3.chunkSize);
-          fs2.read(file, _buffer, 0, _buffer.length, offset, function(err3, bytesRead, data) {
+          fs.read(file, _buffer, 0, _buffer.length, offset, function(err3, bytesRead, data) {
             if (err3)
               return callback(err3, self3);
             offset = offset + bytesRead;
@@ -48712,7 +48712,7 @@ var require_grid_store = __commonJS((exports2, module2) => {
                 self3.position = self3.position + bytesRead;
                 self3.currentChunk = chunk2;
                 if (offset >= stats.size) {
-                  fs2.close(file, function(err6) {
+                  fs.close(file, function(err6) {
                     if (err6)
                       return callback(err6);
                     self3.close(function(err7) {
@@ -65862,10 +65862,10 @@ var require_dist = __commonJS((exports2) => {
 
 // index.js
 var import_dotenv2 = __toModule(require_main());
-var import_discord3 = __toModule(require_src3());
+var import_discord2 = __toModule(require_src3());
 
 // commands/index.js
-var import_discord2 = __toModule(require_src3());
+var import_discord = __toModule(require_src3());
 
 // commands/Command.js
 var Command = class {
@@ -66610,14 +66610,11 @@ var UsersCommand = class extends DBCommand_default {
 var Users = new UsersCommand();
 var users_default = Users;
 
-// commands/scrummy/dataUser.js
-var import_fs = __toModule(require("fs"));
-
 // chartBuilder.js
 var import_chartjs_node_canvas = __toModule(require_dist());
 var d32 = __toModule(require_d3_time());
 var ChartBuilder = class {
-  constructor(width = 800, height = 600) {
+  constructor(width = 1e3, height = 600) {
     const chartCallback = (ChartJS) => {
       ChartJS.defaults.global.elements.rectangle.borderWidth = 2;
       ChartJS.plugins.register({
@@ -66659,6 +66656,32 @@ var ChartBuilder = class {
     }
     return binnedData;
   }
+  reBinServerTimeCardData(rangeStart, rangeEnd, data) {
+    const localEnd = new Date(rangeEnd);
+    localEnd.setDate(localEnd.getDate() + 1);
+    const bins = {};
+    const days = d32.timeDay.range(rangeStart, localEnd);
+    days.forEach((curDay) => {
+      bins[curDay] = 0;
+    });
+    const binnedDataSeries = {};
+    for (let i = 0; i < data.length - 1; i++) {
+      if (data[i].punch === "out")
+        continue;
+      const clockIn2 = data[i].time;
+      const clockOut2 = data[i + 1].time;
+      if (!binnedDataSeries[data[i].discordName]) {
+        binnedDataSeries[data[i].discordName] = {...bins};
+      }
+      const curUserBins = binnedDataSeries[data[i].discordName];
+      const dayBin = d32.timeDay(clockIn2);
+      if (!curUserBins[dayBin]) {
+        curUserBins[dayBin] = 0;
+      }
+      curUserBins[dayBin] += minutesBetween(clockIn2, clockOut2);
+    }
+    return binnedDataSeries;
+  }
   makeUserHoursChart(userName, rangeStart, rangeEnd, data) {
     const binData = this.reBinTimeCardData(rangeStart, rangeEnd, data);
     const chartConfig = {
@@ -66692,11 +66715,91 @@ var ChartBuilder = class {
     };
     return this.chartJSNodeCanvas.renderToBuffer(chartConfig, "image/jpeg");
   }
+  makeServerHoursChart(serverName, rangeStart, rangeEnd, data) {
+    const binSeriesData = this.reBinServerTimeCardData(rangeStart, rangeEnd, data);
+    const chartConfig = {
+      type: "bar",
+      data: {
+        labels: Object.keys(Object.values(binSeriesData)[0]).map((label) => {
+          return this.dateFormatter.format(new Date(label));
+        }),
+        datasets: Object.entries(binSeriesData).map(([seriesName, binData], i) => {
+          return {
+            label: seriesName,
+            borderColor: ChartBuilder.BACKGROUND_COLORS[i % ChartBuilder.BACKGROUND_COLORS.length],
+            backgroundColor: ChartBuilder.BORDER_COLORS[i % ChartBuilder.BORDER_COLORS.length],
+            data: Object.values(binData)
+          };
+        })
+      },
+      options: {
+        legend: {
+          position: "right",
+          align: "start"
+        },
+        title: {
+          display: true,
+          text: [
+            `Hours Worked for users in the '${serverName}' server`,
+            `${this.dateFormatter.format(rangeStart)} to ${this.dateFormatter.format(rangeEnd)}`
+          ]
+        },
+        scales: {
+          xAxes: [{scaleLabel: {display: true, labelString: "Day"}}],
+          yAxes: [{scaleLabel: {display: true, labelString: "Minutes"}}]
+        }
+      }
+    };
+    return this.chartJSNodeCanvas.renderToBuffer(chartConfig, "image/jpeg");
+  }
 };
+ChartBuilder.BACKGROUND_COLORS = [
+  "rgba(230,  25,  75, 0.2)",
+  "rgba( 60, 180,  75, 0.2)",
+  "rgba(255, 225,  25, 0.2)",
+  "rgba(  0, 130, 200, 0.2)",
+  "rgba(245, 130,  48, 0.2)",
+  "rgba(145,  30, 180, 0.2)",
+  "rgba( 70, 240, 240, 0.2)",
+  "rgba(240,  50, 230, 0.2)",
+  "rgba(210, 245,  60, 0.2)",
+  "rgba(250, 190, 212, 0.2)",
+  "rgba(  0, 128, 128, 0.2)",
+  "rgba(220, 190, 255, 0.2)",
+  "rgba(170, 110,  40, 0.2)",
+  "rgba(255, 250, 200, 0.2)",
+  "rgba(128,   0,   0, 0.2)",
+  "rgba(170, 255, 195, 0.2)",
+  "rgba(128, 128,   0, 0.2)",
+  "rgba(255, 215, 180, 0.2)",
+  "rgba(  0,   0, 128, 0.2)",
+  "rgba(128, 128, 128, 0.2)"
+];
+ChartBuilder.BORDER_COLORS = [
+  "rgba(230,  25,  75, 1)",
+  "rgba( 60, 180,  75, 1)",
+  "rgba(255, 225,  25, 1)",
+  "rgba(  0, 130, 200, 1)",
+  "rgba(245, 130,  48, 1)",
+  "rgba(145,  30, 180, 1)",
+  "rgba( 70, 240, 240, 1)",
+  "rgba(240,  50, 230, 1)",
+  "rgba(210, 245,  60, 1)",
+  "rgba(250, 190, 212, 1)",
+  "rgba(  0, 128, 128, 1)",
+  "rgba(220, 190, 255, 1)",
+  "rgba(170, 110,  40, 1)",
+  "rgba(255, 250, 200, 1)",
+  "rgba(128,   0,   0, 1)",
+  "rgba(170, 255, 195, 1)",
+  "rgba(128, 128,   0, 1)",
+  "rgba(255, 215, 180, 1)",
+  "rgba(  0,   0, 128, 1)",
+  "rgba(128, 128, 128, 1)"
+];
 var chartBuilder_default = ChartBuilder;
 
 // commands/scrummy/dataUser.js
-var import_discord = __toModule(require_src3());
 var DataUserCommand = class extends DBCommand_default {
   constructor() {
     super("!datauser", ["!du"], ["start", "end"], [
@@ -66757,6 +66860,7 @@ var DataServerCommand = class extends DBCommand_default {
       '"start" and "end" must be parsable by Date.parse().',
       '"end" is optional and defaults to now'
     ]);
+    this.chartBuilder = new chartBuilder_default();
   }
   async execute(msg, args) {
     if (!msg.guild) {
@@ -66785,10 +66889,8 @@ var DataServerCommand = class extends DBCommand_default {
         msg.reply("No data returned.");
         return;
       }
-      console.error("Debug Data:");
-      console.error(timeCardInRange);
-      const message = "See log";
-      msg.reply(message);
+      const imageBuffer = await this.chartBuilder.makeServerHoursChart(msg.guild.name, start, end, timeCardInRange);
+      msg.channel.send(`${msg.author} Here is your data`, {files: [imageBuffer]});
     } catch (err) {
       console.error("Error reporting user data");
       console.error(err);
@@ -66840,7 +66942,7 @@ var Help = class extends Command_default {
 };
 var help = new Help();
 commands.push(help);
-var BotCommands = new import_discord2.default.Collection();
+var BotCommands = new import_discord.default.Collection();
 commands.forEach((cmd) => {
   BotCommands.set(cmd.name, cmd);
   cmd.alias.forEach((aliasName) => {
@@ -66852,7 +66954,7 @@ var commands_default = BotCommands;
 // index.js
 import_dotenv2.default.config();
 var TOKEN = true ? process.env.DEV_TOKEN : process.env.TOKEN;
-var bot = new import_discord3.default.Client();
+var bot = new import_discord2.default.Client();
 bot.login(TOKEN);
 bot.commands = commands_default;
 bot.on("ready", () => {

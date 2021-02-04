@@ -1,6 +1,9 @@
 // Import the general command object
 import DBCommand from '../DBCommand.js'
 
+// Our chart-building helper
+import ChartBuilder from '../../chartBuilder.js'
+
 // Define the clock-in command
 class DataServerCommand extends DBCommand {
   constructor () {
@@ -9,6 +12,8 @@ class DataServerCommand extends DBCommand {
       '"start" and "end" must be parsable by Date.parse().',
       '"end" is optional and defaults to now'
     ])
+
+    this.chartBuilder = new ChartBuilder()
   }
 
   // Override execute method
@@ -47,15 +52,9 @@ class DataServerCommand extends DBCommand {
         return
       }
 
-      console.error('Debug Data:')
-      console.error(timeCardInRange)
-
-      // Build the message
-      const message = 'See log'
-      // message += '```'
-
-      // Send the full message
-      msg.reply(message)
+      // Make the chart and send it
+      const imageBuffer = await this.chartBuilder.makeServerHoursChart(msg.guild.name, start, end, timeCardInRange)
+      msg.channel.send(`${msg.author} Here is your data`, { files: [imageBuffer] })
     } catch (err) {
       console.error('Error reporting user data')
       console.error(err)

@@ -1,11 +1,9 @@
-import fs from 'fs'
 
 // Import the general command object
 import DBCommand from '../DBCommand.js'
 
+// Our chart-building helper
 import ChartBuilder from '../../chartBuilder.js'
-
-import { MessageAttachment, MessageEmbed } from 'discord.js'
 
 // Define the clock-in command
 class DataUserCommand extends DBCommand {

@@ -49953,6 +49953,31 @@ var DBCommand = class extends DBCommandBase_default {
       });
     });
   }
+  getOldUsers() {
+    return new Promise((resolve, reject) => {
+      DBCommandBase_default.db.collection("Users").aggregate([
+        {$match: {timeCardVersion: 1}},
+        {$project: {_id: 1}}
+      ], (err, cursor) => {
+        if (err) {
+          debug2("Error retrieving old users on server");
+          debug2(err);
+          return reject(err);
+        }
+        cursor.toArray((err2, docs) => {
+          if (err2) {
+            debug2("Error converting old users to array");
+            debug2(err2);
+            return reject(err2);
+          }
+          if (!docs || !Array.isArray(docs)) {
+            return resolve([]);
+          }
+          return resolve(docs);
+        });
+      });
+    });
+  }
   getUserTimeCard(dbID, serverID) {
     return new Promise((resolve, reject) => {
       DBCommandBase_default.db.collection("Users").findOne({_id: dbID}, {projection: {timeCard: `$timeCard.${serverID}`}}, (err, result) => {
@@ -50378,8 +50403,40 @@ var UsersCommand = class extends DBCommand_default {
 var Users = new UsersCommand();
 var users_default = Users;
 
+// commands/scrummy/migrate.js
+var MigrateCommand = class extends DBCommand_default {
+  constructor() {
+    super("!migrate", ["!mig"], "Migrate database from v1 to v2.");
+  }
+  async execute(msg, args) {
+    if (!msg.guild) {
+      msg.reply("This command only works in a specific server channel");
+      return;
+    }
+    try {
+      const allUsers = await this.getOldUsers();
+      if (!allUsers || allUsers.length === 0) {
+        msg.reply("No old users found.");
+        return;
+      }
+      const plural = allUsers.length === 1 ? "user" : "users";
+      msg.reply(`Migrating ${allUsers.length} ${plural}`);
+      for (let i = 0; i < allUsers.length; i++) {
+        await this.upgradeUserTimeCard(allUsers[i]._id);
+      }
+      msg.reply("Migration complete.");
+    } catch (err) {
+      msg.reply("Whoops, something went wrong.");
+      console.error("Error migrating users");
+      console.error(err);
+    }
+  }
+};
+var Migrate = new MigrateCommand();
+var migrate_default = Migrate;
+
 // commands/index.js
-var commands = [ping_default, clockIn_default, clockOut_default, status_default, list_default, summary_default, adjust_default, users_default];
+var commands = [ping_default, clockIn_default, clockOut_default, status_default, list_default, summary_default, adjust_default, users_default, migrate_default];
 var BotCommands = new import_discord.default.Collection();
 commands.forEach((cmd) => {
   BotCommands.set(cmd.name, cmd);

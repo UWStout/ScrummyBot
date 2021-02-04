@@ -154,6 +154,41 @@ class DBCommand extends DBCommandBase {
     })
   }
 
+  getOldUsers () {
+    return new Promise((resolve, reject) => {
+      // Retrieve a punch card with only entries for this server
+      DBCommandBase.db.collection('Users')
+        .aggregate([
+          { $match: { timeCardVersion: 1 } },
+          { $project: { _id: 1 } }
+        ], (err, cursor) => {
+          // Check for and handle errors
+          if (err) {
+            debug('Error retrieving old users on server')
+            debug(err)
+            return reject(err)
+          }
+
+          cursor.toArray((err, docs) => {
+            // Check for and handle errors
+            if (err) {
+              debug('Error converting old users to array')
+              debug(err)
+              return reject(err)
+            }
+
+            // If nothing found, return empty array
+            if (!docs || !Array.isArray(docs)) {
+              return resolve([])
+            }
+
+            // Return the users
+            return resolve(docs)
+          })
+        })
+    })
+  }
+
   getUserTimeCard (dbID, serverID) {
     return new Promise((resolve, reject) => {
       // Retrieve a punch card with only entries for this server

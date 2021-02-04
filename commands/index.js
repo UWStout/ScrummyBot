@@ -10,9 +10,10 @@ import list from './scrummy/list.js'
 import summary from './scrummy/summary.js'
 import adjust from './scrummy/adjust.js'
 import users from './scrummy/users.js'
+import migrate from './scrummy/migrate.js'
 
 // Build command array
-const commands = [ping, clockIn, clockOut, status, list, summary, adjust, users]
+const commands = [ping, clockIn, clockOut, status, list, summary, adjust, users, migrate]
 
 // Build command collection
 const BotCommands = new Discord.Collection()

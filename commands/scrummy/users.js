@@ -4,7 +4,7 @@ import DBCommand from '../DBCommand.js'
 // Define the clock-in command
 class UsersCommand extends DBCommand {
   constructor () {
-    super('!users', ['!us'], 'List all the users on this server and their current status.')
+    super('!users', ['!us'], [], ['List all the users on this server and their', 'current status.'])
   }
 
   // Override execute method

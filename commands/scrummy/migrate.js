@@ -4,7 +4,7 @@ import DBCommand from '../DBCommand.js'
 // Define the clock-in command
 class MigrateCommand extends DBCommand {
   constructor () {
-    super('!migrate', ['!mig'], 'Migrate database from v1 to v2.')
+    super('!migrate', ['!mig'], [], 'Migrate database from v1 to v2.')
   }
 
   // Override execute method

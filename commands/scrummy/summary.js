@@ -7,7 +7,7 @@ import * as UTIL from '../util.js'
 // Define the clock-in command
 class SummaryCommand extends DBCommand {
   constructor () {
-    super('!summary', ['!sum'], 'Param: day-of-week, list all times work (and length) back to indicated day (default: sunday).')
+    super('!summary', ['!sum'], ['weekday'], ['List times worked (and length) back to', 'indicated day (default weekday: "sunday").'])
   }
 
   // Override execute method

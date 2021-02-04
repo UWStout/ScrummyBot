@@ -22,8 +22,8 @@ const DEV_DB_URL = 'mongodb://localhost:27017/ScrummyData'
 const PROD_DB_URL = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PW}@profberriercluster.zzyhu.mongodb.net/ScrummyData?retryWrites=true&w=majority`
 
 class DBCommandBase extends Command {
-  constructor (name, alias, description) {
-    super(name, alias, description)
+  constructor (name, alias, params, description) {
+    super(name, alias, params, description)
 
     // Make sure a DB connection exists
     this.checkConnection()

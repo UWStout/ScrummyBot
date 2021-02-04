@@ -7,7 +7,7 @@ import * as UTIL from '../util.js'
 // Define the clock-in command
 class StatusCommand extends DBCommand {
   constructor () {
-    super('!status', ['!stat', '!st'], 'Report time tacking status for this server.')
+    super('!status', ['!stat', '!st'], [], 'Report time tacking status for this server.')
   }
 
   // Override execute method

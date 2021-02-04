@@ -7,7 +7,7 @@ import { formatDate } from '../util.js'
 // Define the clock-in command
 class ClockInCommand extends DBCommand {
   constructor () {
-    super('!clockin', ['!ci'], 'Clock in and begin tracking your time')
+    super('!clockin', ['!ci'], [], 'Clock in and begin tracking your time')
   }
 
   // Override execute method

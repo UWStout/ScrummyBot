@@ -4,7 +4,7 @@ import Command from '../Command.js'
 // Define the ping command
 class PingCommand extends Command {
   constructor () {
-    super('!ping', 'Ping the bot, responds with pong')
+    super('!ping', [], [], 'Ping the bot, responds with pong')
   }
 
   // Override execute method

@@ -8,8 +8,8 @@ import * as UTIL from '../util.js'
 class AdjustCommand extends DBCommand {
   // Build a new DB Command with fixed strings
   constructor () {
-    super('!adjust', ['!adj'],
-      'params: <n> <new time>, Adjust a time-card punch to a new time. Use !list to get valid n value. "new time" must be parsable as a JavaScript Date.'
+    super('!adjust', ['!adj'], ['n', 'new_time'],
+      ['Adjust a time-card punch to a new time.', 'Use !list to get valid n value.', '"new_time" must be parsable by Date.parse().']
     )
   }
 

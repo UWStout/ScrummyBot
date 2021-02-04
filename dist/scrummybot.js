@@ -49729,23 +49729,32 @@ var import_discord = __toModule(require_src3());
 
 // commands/Command.js
 var Command = class {
-  constructor(name, alias = [], description = "") {
+  constructor(name, alias = [], params = [], description = "") {
     this._name = name;
     if (Array.isArray(alias)) {
       this._alias = alias;
     } else {
-      this._alias = [];
-      if (typeof alias === "string") {
-        description = alias;
-      }
+      this._alias = [alias];
     }
-    this._description = description;
+    if (Array.isArray(params)) {
+      this._params = params;
+    } else {
+      this._params = [params];
+    }
+    if (Array.isArray(description)) {
+      this._description = description;
+    } else {
+      this._description = [description];
+    }
   }
   get name() {
     return this._name;
   }
   get alias() {
     return this._alias;
+  }
+  get params() {
+    return this._params;
   }
   get description() {
     return this._description;
@@ -49759,7 +49768,7 @@ var Command_default = Command;
 // commands/scrummy/ping.js
 var PingCommand = class extends Command_default {
   constructor() {
-    super("!ping", "Ping the bot, responds with pong");
+    super("!ping", [], [], "Ping the bot, responds with pong");
   }
   execute(msg, args) {
     msg.reply("pong");
@@ -49780,8 +49789,8 @@ import_dotenv.default.config();
 var DEV_DB_URL = "mongodb://localhost:27017/ScrummyData";
 var PROD_DB_URL = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PW}@profberriercluster.zzyhu.mongodb.net/ScrummyData?retryWrites=true&w=majority`;
 var DBCommandBase = class extends Command_default {
-  constructor(name, alias, description) {
-    super(name, alias, description);
+  constructor(name, alias, params, description) {
+    super(name, alias, params, description);
     this.checkConnection();
   }
   async checkConnection() {
@@ -50104,7 +50113,7 @@ function sumPunches(punches) {
 // commands/scrummy/clockIn.js
 var ClockInCommand = class extends DBCommand_default {
   constructor() {
-    super("!clockin", ["!ci"], "Clock in and begin tracking your time");
+    super("!clockin", ["!ci"], [], "Clock in and begin tracking your time");
   }
   async execute(msg, args) {
     if (!msg.guild) {
@@ -50137,7 +50146,7 @@ var clockIn_default = clockIn;
 // commands/scrummy/clockOut.js
 var ClockOutCommand = class extends DBCommand_default {
   constructor() {
-    super("!clockout", ["!co"], "Clock out and stop tracking your time");
+    super("!clockout", ["!co"], [], "Clock out and stop tracking your time");
   }
   async execute(msg, args) {
     if (!msg.guild) {
@@ -50172,7 +50181,7 @@ var clockOut_default = clockOut;
 // commands/scrummy/status.js
 var StatusCommand = class extends DBCommand_default {
   constructor() {
-    super("!status", ["!stat", "!st"], "Report time tacking status for this server.");
+    super("!status", ["!stat", "!st"], [], "Report time tacking status for this server.");
   }
   async execute(msg, args) {
     if (!msg.guild) {
@@ -50222,7 +50231,7 @@ var status_default = Status;
 // commands/scrummy/list.js
 var ListCommand = class extends DBCommand_default {
   constructor() {
-    super("!list", ["!ls"], 'Param (optional): n, List your "n" most recent punches on this server (defaults to 4).');
+    super("!list", ["!ls"], ["n"], ['List your "n" most recent punches on this', "server (defaults to 4)."]);
   }
   async execute(msg, args) {
     if (!msg.guild) {
@@ -50268,7 +50277,7 @@ var list_default = List;
 // commands/scrummy/summary.js
 var SummaryCommand = class extends DBCommand_default {
   constructor() {
-    super("!summary", ["!sum"], "Param: day-of-week, list all times work (and length) back to indicated day (default: sunday).");
+    super("!summary", ["!sum"], ["weekday"], ["List times worked (and length) back to", 'indicated day (default weekday: "sunday").']);
   }
   async execute(msg, args) {
     if (!msg.guild) {
@@ -50324,7 +50333,7 @@ var summary_default = Summary;
 // commands/scrummy/adjust.js
 var AdjustCommand = class extends DBCommand_default {
   constructor() {
-    super("!adjust", ["!adj"], 'params: <n> <new time>, Adjust a time-card punch to a new time. Use !list to get valid n value. "new time" must be parsable as a JavaScript Date.');
+    super("!adjust", ["!adj"], ["n", "new_time"], ["Adjust a time-card punch to a new time.", "Use !list to get valid n value.", '"new_time" must be parsable by Date.parse().']);
   }
   async execute(msg, args) {
     if (!msg.guild) {
@@ -50373,7 +50382,7 @@ var adjust_default = Adjust;
 // commands/scrummy/users.js
 var UsersCommand = class extends DBCommand_default {
   constructor() {
-    super("!users", ["!us"], "List all the users on this server and their current status.");
+    super("!users", ["!us"], [], ["List all the users on this server and their", "current status."]);
   }
   async execute(msg, args) {
     if (!msg.guild) {
@@ -50403,40 +50412,48 @@ var UsersCommand = class extends DBCommand_default {
 var Users = new UsersCommand();
 var users_default = Users;
 
-// commands/scrummy/migrate.js
-var MigrateCommand = class extends DBCommand_default {
-  constructor() {
-    super("!migrate", ["!mig"], "Migrate database from v1 to v2.");
+// commands/index.js
+var commands = [ping_default, clockIn_default, clockOut_default, status_default, list_default, summary_default, adjust_default, users_default];
+function makeHelpString(command) {
+  let cmdList = command.name;
+  if (command.alias.length > 0) {
+    cmdList += ", " + command.alias.join(", ");
   }
-  async execute(msg, args) {
-    if (!msg.guild) {
-      msg.reply("This command only works in a specific server channel");
-      return;
+  let params = "[n/a]";
+  if (command.params.length > 0) {
+    params = command.params.join(", ");
+  }
+  let description = "";
+  let first = true;
+  command.description.forEach((descLine) => {
+    if (first) {
+      description += descLine;
+    } else {
+      description += "\n" + " ".repeat(35) + descLine;
     }
-    try {
-      const allUsers = await this.getOldUsers();
-      if (!allUsers || allUsers.length === 0) {
-        msg.reply("No old users found.");
-        return;
-      }
-      const plural = allUsers.length === 1 ? "user" : "users";
-      msg.reply(`Migrating ${allUsers.length} ${plural}`);
-      for (let i = 0; i < allUsers.length; i++) {
-        await this.upgradeUserTimeCard(allUsers[i]._id);
-      }
-      msg.reply("Migration complete.");
-    } catch (err) {
-      msg.reply("Whoops, something went wrong.");
-      console.error("Error migrating users");
-      console.error(err);
-    }
+    first = false;
+  });
+  return cmdList.padEnd(20, " ") + " " + params.padEnd(13, " ") + " " + description + "\n";
+}
+var helpDescription = "Scrummy bot supports these commands:\n```";
+helpDescription += "Command              Params        Description\n";
+helpDescription += "==============================================================================\n";
+commands.forEach((curCmd) => {
+  helpDescription += makeHelpString(curCmd);
+});
+var Help = class extends Command_default {
+  constructor() {
+    super("!help", ["!?"], [], "Show this list of commands");
+    this.output = helpDescription;
+    this.output += makeHelpString(this);
+    this.output += "```";
+  }
+  execute(msg, args) {
+    msg.reply(this.output);
   }
 };
-var Migrate = new MigrateCommand();
-var migrate_default = Migrate;
-
-// commands/index.js
-var commands = [ping_default, clockIn_default, clockOut_default, status_default, list_default, summary_default, adjust_default, users_default, migrate_default];
+var help = new Help();
+commands.push(help);
 var BotCommands = new import_discord.default.Collection();
 commands.forEach((cmd) => {
   BotCommands.set(cmd.name, cmd);

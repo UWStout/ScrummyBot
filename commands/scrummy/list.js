@@ -7,7 +7,7 @@ import * as UTIL from '../util.js'
 // Define the clock-in command
 class ListCommand extends DBCommand {
   constructor () {
-    super('!list', ['!ls'], 'Param (optional): n, List your "n" most recent punches on this server (defaults to 4).')
+    super('!list', ['!ls'], ['n'], ['List your "n" most recent punches on this', 'server (defaults to 4).'])
   }
 
   // Override execute method

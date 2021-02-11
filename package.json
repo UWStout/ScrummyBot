@@ -8,8 +8,8 @@
     "build": "run-s clean build-bot",
     "clean": "rimraf dist",
     "devbuild": "run-s clean devbuild-bot devstart",
-    "devbuild-bot": "esbuild --define:_DEV_=true --platform=node --sourcemap --external:node-opus --external:opusscript --external:@discordjs/opus --external:saslprep --external:erlpak --external:zlib-sync --external:bufferutil --external:utf-8-validate --bundle --outfile=dist/scrummybot.js index.js",
-    "build-bot": "esbuild --define:_DEV_=false --platform=node --external:node-opus --external:opusscript --external:@discordjs/opus --external:saslprep --external:erlpak --external:zlib-sync --external:bufferutil --external:utf-8-validate --bundle --outfile=dist/scrummybot.js index.js",
+    "devbuild-bot": "esbuild --define:_DEV_=true --platform=node --sourcemap --external:node-fetch --external:abort-controller --external:ffmpeg-static --external:node-opus --external:opusscript --external:@discordjs/opus --external:saslprep --external:erlpak --external:zlib-sync --external:bufferutil --external:utf-8-validate --bundle --outfile=dist/scrummybot.js index.js",
+    "build-bot": "esbuild --define:_DEV_=false --platform=node --external:node-fetch --external:abort-controller --external:ffmpeg-static --external:node-opus --external:opusscript --external:@discordjs/opus --external:saslprep --external:erlpak --external:zlib-sync --external:bufferutil --external:utf-8-validate --bundle --outfile=dist/scrummybot.js index.js",
     "devstart": "bash -c 'DEBUG=bot,bot:* DEBUG_HIDE_DATE=true DEBUG_COLORS=true node --enable-source-maps dist/scrummybot.js'",
     "start": "bash -c 'DEBUG=bot,bot:* DEBUG_HIDE_DATE=true DEBUG_COLORS=true node dist/scrummybot.js"
   },
@@ -33,7 +33,7 @@
   "devDependencies": {
     "d3-time": "^2.0.0",
     "debug": "^4.3.1",
-    "discord.js": "^11.5.1",
+    "discord.js": "^12.5.1",
     "dotenv": "^8.2.0",
     "esbuild": "^0.8.36",
     "eslint": "^7.18.0",
@@ -47,10 +47,12 @@
     "rimraf": "^3.0.2"
   },
   "dependencies": {
+    "abort-controller": "^3.0.0",
     "bufferutil": "^4.0.3",
     "chart.js": "^2.9.4",
     "chartjs-node-canvas": "^3.1.0",
     "erlpack": "github:discord/erlpack",
+    "node-fetch": "^2.6.1",
     "saslprep": "^1.0.3",
     "utf-8-validate": "^5.0.4",
     "zlib-sync": "^0.1.7"

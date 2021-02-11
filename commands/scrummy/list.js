@@ -35,9 +35,9 @@ class ListCommand extends DBCommand {
 
       // Trim to only the entries of interest
       const count = (args[0] && !isNaN(parseInt(args[0])) ? args[0] : 4)
-      if (timeCard.length > count) {
-        timeCard = timeCard.slice(timeCard.length - count)
-      }
+      const fullLength = timeCard.length
+      const offset = Math.max(0, timeCard.length - count)
+      if (fullLength > count) { timeCard = timeCard.slice(offset) }
 
       if (timeCard.length === 0) {
         msg.reply('The list is empty, try again with a higher number.')
@@ -49,7 +49,7 @@ class ListCommand extends DBCommand {
 
         // Add each punch to the list
         timeCard.forEach((curPunch, i) => {
-          message += `\n${i + 1}) Clock ${curPunch.punch}: ${UTIL.formatDate(curPunch.time)}`
+          message += `\n${i + offset + 1}) Clock ${curPunch.punch}: ${UTIL.formatDate(curPunch.time)}`
         })
 
         // Send the full message

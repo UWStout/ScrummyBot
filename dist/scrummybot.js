@@ -1634,29 +1634,35 @@ Content-Type: ${mimetype}`;
 // node_modules/snekfetch/package.json
 var require_package = __commonJS((exports2, module2) => {
   module2.exports = {
-    _from: "snekfetch@^3.6.4",
+    _args: [
+      [
+        "snekfetch@3.6.4",
+        "D:\\Programming-School\\scrummy-bot"
+      ]
+    ],
+    _development: true,
+    _from: "snekfetch@3.6.4",
     _id: "snekfetch@3.6.4",
     _inBundle: false,
     _integrity: "sha512-NjxjITIj04Ffqid5lqr7XdgwM7X61c/Dns073Ly170bPQHLm6jkmelye/eglS++1nfTWktpP6Y2bFXjdPlQqdw==",
     _location: "/snekfetch",
     _phantomChildren: {},
     _requested: {
-      type: "range",
+      type: "version",
       registry: true,
-      raw: "snekfetch@^3.6.4",
+      raw: "snekfetch@3.6.4",
       name: "snekfetch",
       escapedName: "snekfetch",
-      rawSpec: "^3.6.4",
+      rawSpec: "3.6.4",
       saveSpec: null,
-      fetchSpec: "^3.6.4"
+      fetchSpec: "3.6.4"
     },
     _requiredBy: [
       "/discord.js"
     ],
     _resolved: "https://registry.npmjs.org/snekfetch/-/snekfetch-3.6.4.tgz",
-    _shasum: "d13e80a616d892f3d38daae4289f4d258a645120",
-    _spec: "snekfetch@^3.6.4",
-    _where: "D:\\Programming-School\\scrummy-bot\\node_modules\\discord.js",
+    _spec: "3.6.4",
+    _where: "D:\\Programming-School\\scrummy-bot",
     author: {
       name: "Gus Caplan",
       email: "me@gus.host"
@@ -1668,9 +1674,7 @@ var require_package = __commonJS((exports2, module2) => {
     bugs: {
       url: "https://github.com/devsnek/snekfetch/issues"
     },
-    bundleDependencies: false,
     dependencies: {},
-    deprecated: "use node-fetch instead",
     description: "Just do http requests without all that weird nastiness from other libs",
     devDependencies: {
       "@snek/syncify": "0.0.6",
@@ -2141,28 +2145,34 @@ var require_snekfetch = __commonJS((exports2, module2) => {
 // node_modules/discord.js/package.json
 var require_package2 = __commonJS((exports2, module2) => {
   module2.exports = {
-    _from: "discord.js@^11.0.1",
+    _args: [
+      [
+        "discord.js@11.6.4",
+        "D:\\Programming-School\\scrummy-bot"
+      ]
+    ],
+    _development: true,
+    _from: "discord.js@11.6.4",
     _id: "discord.js@11.6.4",
     _inBundle: false,
     _integrity: "sha512-cK6rH1PuGjSjpmEQbnpuTxq1Yv8B89SotyKUFcr4RhnsiZnfBfDOev7DD7v5vhtEyyj51NuMWFoRJzgy/m08Uw==",
     _location: "/discord.js",
     _phantomChildren: {},
     _requested: {
-      type: "range",
+      type: "version",
       registry: true,
-      raw: "discord.js@^11.0.1",
+      raw: "discord.js@11.6.4",
       name: "discord.js",
       escapedName: "discord.js",
-      rawSpec: "^11.0.1",
+      rawSpec: "11.6.4",
       saveSpec: null,
-      fetchSpec: "^11.0.1"
+      fetchSpec: "11.6.4"
     },
     _requiredBy: [
       "#DEV:/"
     ],
     _resolved: "https://registry.npmjs.org/discord.js/-/discord.js-11.6.4.tgz",
-    _shasum: "76bab98de08d7586ecde44c063ef310e6b9a2700",
-    _spec: "discord.js@^11.0.1",
+    _spec: "11.6.4",
     _where: "D:\\Programming-School\\scrummy-bot",
     author: {
       name: "Amish Shah",
@@ -2206,7 +2216,6 @@ var require_package2 = __commonJS((exports2, module2) => {
     bugs: {
       url: "https://github.com/discordjs/discord.js/issues"
     },
-    bundleDependencies: false,
     dependencies: {
       long: "^4.0.0",
       "prism-media": "^0.0.4",
@@ -2214,7 +2223,6 @@ var require_package2 = __commonJS((exports2, module2) => {
       tweetnacl: "^1.0.0",
       ws: "^6.0.0"
     },
-    deprecated: false,
     description: "A powerful library for interacting with the Discord API",
     devDependencies: {
       "@types/node": "^9.4.6",
@@ -66445,8 +66453,10 @@ var ListCommand = class extends DBCommand_default {
         return;
       }
       const count = args[0] && !isNaN(parseInt(args[0])) ? args[0] : 4;
-      if (timeCard.length > count) {
-        timeCard = timeCard.slice(timeCard.length - count);
+      const fullLength = timeCard.length;
+      const offset = Math.max(0, timeCard.length - count);
+      if (fullLength > count) {
+        timeCard = timeCard.slice(offset);
       }
       if (timeCard.length === 0) {
         msg.reply("The list is empty, try again with a higher number.");
@@ -66456,7 +66466,7 @@ var ListCommand = class extends DBCommand_default {
         let message = `Here ${verb} your last ${timeCard.length} ${plural}`;
         timeCard.forEach((curPunch, i) => {
           message += `
-${i + 1}) Clock ${curPunch.punch}: ${formatDate(curPunch.time)}`;
+${i + offset + 1}) Clock ${curPunch.punch}: ${formatDate(curPunch.time)}`;
         });
         msg.reply(message);
       }

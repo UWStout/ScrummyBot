@@ -5,13 +5,25 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "devStart": "bash -c 'DEBUG=bot,bot:* DEBUG_HIDE_DATE=true DEBUG_COLORS=true node index.js dev'",
+    "devStart": "bash -c 'DEBUG=bot,bot:* DEBUG_HIDE_DATE=true DEBUG_COLORS=true nodemon index.js dev'",
     "start": "bash -c 'DEBUG=bot,bot:* DEBUG_HIDE_DATE=true DEBUG_COLORS=true node index.js",
     "deploy": "node deployCommands.js",
     "devDeploy": "node deployCommands.js dev"
   },
   "engines": {
     "node": "16.x"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "dist/",
+      "Procfile",
+      "node_modules",
+      ".eslintrc.json",
+      "package-lock.json",
+      "package.json"
+    ],
+    "ext": "json js",
+    "verbose": false
   },
   "author": "Seth Berrier",
   "license": "MIT",
@@ -25,6 +37,7 @@
     "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-n": "^15.5.0",
     "eslint-plugin-promise": "^6.1.1",
-    "mongodb": "^4.11.0"
+    "mongodb": "^4.11.0",
+    "nodemon": "^2.0.20"
   }
 }

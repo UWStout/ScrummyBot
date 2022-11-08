@@ -1,7 +1,7 @@
 import dotenv from 'dotenv'
 import Debug from 'debug'
 
-import { MongoClient, ServerApiVersion } from 'mongodb'
+import { MongoClient, ObjectId, ServerApiVersion } from 'mongodb'
 
 // Setup debug output object
 const debug = Debug('bot:db_helper')
@@ -176,16 +176,14 @@ export async function getUserTimeCard (dbID, serverID) {
   try {
     // Connect and perform query
     await client.connect()
-    const result = client.db(DB_NAME).collection('Users')
-      .findOne(
-        { _id: dbID },
-        { projection: { timeCard: `$timeCard.${serverID}` } }
-      )
+    const result = await client.db(DB_NAME).collection('Users')
+      .findOne({ _id: new ObjectId(dbID) }, { projection: { timeCard: `$timeCard.${serverID}` } })
 
     // If nothing found, return empty array
-    if (!result || !result.timeCard) {
+    if (!result?.timeCard) {
       return []
     }
+
     return result.timeCard
   } catch (err) {
     // Log error
@@ -218,7 +216,10 @@ export async function setUserTimecard (dbID, serverID, newTimeCard) {
 
 export async function getLastPunch (dbID, serverID) {
   try {
+    // Get the proper timecard for this user
     const timeCard = await getUserTimeCard(dbID, serverID)
+    debug(`Time card for user ${dbID} on ${serverID}:`)
+    debug(timeCard)
 
     // Return last entry (which will be most recent punch)
     if (timeCard.length > 0) {

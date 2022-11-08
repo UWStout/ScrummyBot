@@ -8,18 +8,18 @@ class ChartBuilder {
     // Customize the global ChartJS and any plugins
     const chartCallback = (ChartJS) => {
       // Set border thickness for all rectangle elements (bars)
-      ChartJS.defaults.global.elements.rectangle.borderWidth = 2
+      ChartJS.defaults.elements.bar.borderWidth = 2
 
-      // Fill background
-      ChartJS.plugins.register({
-        beforeDraw: (chart, options) => {
-          const ctx = chart.ctx
-          ctx.save()
-          ctx.fillStyle = '#ffffff'
-          ctx.fillRect(0, 0, width, height)
-          ctx.restore()
-        }
-      })
+      // // Fill background
+      // ChartJS.plugins.register({
+      //   beforeDraw: (chart, options) => {
+      //     const ctx = chart.ctx
+      //     ctx.save()
+      //     ctx.fillStyle = '#ffffff'
+      //     ctx.fillRect(0, 0, width, height)
+      //     ctx.restore()
+      //   }
+      // })
     }
 
     // Setup a date formatter
@@ -31,7 +31,7 @@ class ChartBuilder {
     })
 
     // Get a ChartJSNodeCanvas instance
-    this.chartJSNodeCanvas = new ChartJSNodeCanvas({ width, height, chartCallback })
+    this.chartJSNodeCanvas = new ChartJSNodeCanvas({ width, height, backgroundColor: '#ffffff', chartCallback })
   }
 
   reBinTimeCardData (rangeStart, rangeEnd, data) {

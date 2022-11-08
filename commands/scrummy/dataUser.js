@@ -1,75 +1,92 @@
+import { SlashCommandBuilder } from 'discord.js'
 
-// Import the general command object
-import DBCommand from '../DBCommand.js'
-
-// Our chart-building helper
+// Helper functions
 import ChartBuilder from '../../chartBuilder.js'
+import * as DB from '../dbHelper.js'
 
-// Define the clock-in command
-class DataUserCommand extends DBCommand {
-  constructor () {
-    super('!datauser', ['!du'], ['start', 'end'], [
-      'List all data in a range for your account.',
-      '"start" and "end" must be parsable by Date.parse().',
-      '"end" is optional and defaults to now'
-    ])
+// Debugging output
+import Debug from 'debug'
+const debug = Debug('bot:cmd:dataUser')
 
-    this.chartBuilder = new ChartBuilder()
+// The core data for this command
+const slashCommandData = new SlashCommandBuilder()
+slashCommandData.setName('datauser')
+slashCommandData.setDescription('List all data in a range for your account.')
+slashCommandData.addStringOption(option =>
+  option.setName('start')
+    .setDescription('A date for the start of the range. Must be parsable by Date.parse().')
+    .setRequired(true)
+)
+slashCommandData.addStringOption(option =>
+  option.setName('end')
+    .setDescription('A date for the end of the range (defaults to now). Must be parsable by Date.parse().')
+)
+
+// Tool for building our charts
+const chartBuilder = new ChartBuilder()
+
+// the main callback function for this command
+const slashCommandExecute = async (interaction) => {
+  // Only makes sense inside a server channel
+  if (!interaction.guild) {
+    interaction.reply('This command only works in a specific server channel')
+    return
   }
 
-  // Override execute method
-  async execute (msg, args) {
-    // Only makes sense inside a server channel
-    if (!msg.guild) {
-      msg.reply('This command only works in a specific server channel')
+  // Setup date range variables
+  let startStr = interaction.options.getString('start')
+  let endStr = interaction.options.getString('end')
+
+  // Ensure dates provided use local time zone
+  if (startStr.indexOf('T') === -1) { startStr += 'T00:00:00' }
+  if (endStr && endStr.indexOf('T') === -1) { endStr += 'T00:00:00' }
+
+  // Parse to date types
+  const start = Date.parse(startStr)
+  const end = (endStr ? Date.parse(endStr) : Date.now())
+
+  // Check for valid dates
+  if (isNaN(start)) {
+    interaction.reply('Start time missing or invalid.\n```Example: 2021-04-02T13:25:30\n         YYYY-MM-DDTHH:MM:SS```\n(note letter T and 24-hour format)')
+    return
+  }
+
+  if (isNaN(end)) {
+    interaction.reply('End time is invalid.\n```Example: 2021-04-02T13:25:30\n         YYYY-MM-DDTHH:MM:SS```\n(note letter T and 24-hour format)')
+    return
+  }
+
+  // Acknowledge receipt of interaction
+  await interaction.deferReply()
+
+  // Prepare response
+  try {
+    // Ensure there is a user record
+    const dbId = await DB.checkIfUserExists(interaction.user.id)
+    if (!dbId) {
+      interaction.followUp('You haven\'t used ScrummyBot to track time yet. Try /clockin first.')
       return
     }
 
-    // Check for required start time
-    if (args.length < 1 || isNaN(Date.parse(args[0]))) {
-      msg.reply('Start time missing or invalid.\n```Example: 2021-04-02T13:25:30\n         YYYY-MM-DDTHH:MM:SS```\n(note letter T and 24-hour format)')
+    // Get their time card for this server
+    const timeCardInRange = await DB.getServerDataInRange(new Date(start), new Date(end), dbId, interaction.guild.id)
+    if (!timeCardInRange || timeCardInRange.length === 0) {
+      interaction.followUp('No data returned.')
       return
     }
 
-    // Check for optional end time and if it is parsable
-    if (args.length >= 2 && isNaN(Date.parse(args[1]))) {
-      msg.reply('End time is invalid.\n```Example: 2021-04-02T13:25:30\n         YYYY-MM-DDTHH:MM:SS```\n(note letter T and 24-hour format)')
-      return
-    }
-
-    // Ensure dates provided use local time zone
-    if (args[0].indexOf('T') === -1) { args[0] += 'T00:00:00' }
-    if (args.length >= 2 && args[1].indexOf('T') === -1) { args[1] += 'T00:00:00' }
-
-    // Setup date range variables
-    const start = new Date(Date.parse(args[0]))
-    const end = (args.length >= 2 ? new Date(Date.parse(args[1])) : Date.now())
-
-    try {
-      // Ensure there is a user record
-      const dbId = await this.checkIfUserExists(msg.author.id)
-      if (!dbId) {
-        msg.reply('You haven\'t used ScrummyBot to track time yet. Try !clockin first.')
-        return
-      }
-
-      // Get their time card for this server
-      const timeCardInRange = await this.getServerDataInRange(start, end, dbId, msg.guild.id)
-      if (!timeCardInRange || timeCardInRange.length === 0) {
-        msg.reply('No data returned.')
-        return
-      }
-
-      // Make the chart and send it
-      const imageBuffer = await this.chartBuilder.makeUserHoursChart(timeCardInRange[0].discordName, start, end, timeCardInRange)
-      msg.channel.send(`${msg.author} Here is your data`, { files: [imageBuffer] })
-    } catch (err) {
-      console.error('Error reporting user data')
-      console.error(err)
-    }
+    // Make the chart and send it
+    const imageBuffer = await chartBuilder.makeUserHoursChart(timeCardInRange[0].discordName, new Date(start), new Date(end), timeCardInRange)
+    interaction.channel.send(`${interaction.user} Here is your data`, { files: [imageBuffer] })
+  } catch (err) {
+    debug('Error reporting user data')
+    debug(err)
+    await interaction.followUp('Uh-oh, something went wrong.')
   }
 }
 
-// Instantiate and export as a singleton for import into other files
-const DataUser = new DataUserCommand()
-export default DataUser
+// Export command
+export default {
+  data: slashCommandData,
+  execute: slashCommandExecute
+}

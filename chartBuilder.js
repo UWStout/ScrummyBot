@@ -1,7 +1,10 @@
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas'
-import * as d3 from 'd3-time'
 
+import * as d3 from 'd3-time'
 import * as UTIL from './commands/util.js'
+
+import Debug from 'debug'
+const debug = Debug('bot:chartBuilder')
 
 class ChartBuilder {
   constructor (width = 1000, height = 600) {
@@ -31,7 +34,7 @@ class ChartBuilder {
     })
 
     // Get a ChartJSNodeCanvas instance
-    this.chartJSNodeCanvas = new ChartJSNodeCanvas({ width, height, backgroundColor: '#ffffff', chartCallback })
+    this.chartJSNodeCanvas = new ChartJSNodeCanvas({ width, height, backgroundColour: '#ffffff', chartCallback })
   }
 
   reBinTimeCardData (rangeStart, rangeEnd, data) {
@@ -103,6 +106,7 @@ class ChartBuilder {
 
   makeUserHoursChart (userName, rangeStart, rangeEnd, data) {
     const binData = this.reBinTimeCardData(rangeStart, rangeEnd, data)
+    debug(binData)
 
     // Build the chart using the chart.js/Image-Chart API
     const chartConfig = {
@@ -127,14 +131,17 @@ class ChartBuilder {
           ]
         },
         scales: {
-          x: { title: { display: true, text: 'Day' } },
-          y: { title: { display: true, text: 'Minutes' } }
+          xAxis: { title: { display: true, text: 'Day' } },
+          yAxis: { title: { display: true, text: 'Minutes' } }
         }
       }
     }
 
     // Setup image properties and return Promise that resolves to data buffer
-    return this.chartJSNodeCanvas.renderToBuffer(chartConfig, 'image/jpeg')
+    debug(2)
+    const promise = this.chartJSNodeCanvas.renderToBuffer(chartConfig, 'image/jpeg')
+    promise.then(buffer => { debug('Buffer received') }).catch(err => { debug('Chart Error', err) })
+    return promise
   }
 
   makeServerHoursChart (serverName, rangeStart, rangeEnd, data) {

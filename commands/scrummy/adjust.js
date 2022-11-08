@@ -28,7 +28,7 @@ slashCommandData.addStringOption(option =>
 const slashCommandExecute = async (interaction) => {
   // Only makes sense inside a server channel
   if (!interaction.guild) {
-    interaction.reply('This command only works in a specific server channel')
+    await interaction.reply('This command only works in a specific server channel')
     return
   }
 
@@ -40,7 +40,7 @@ const slashCommandExecute = async (interaction) => {
 
   // Check for parsable date-time
   if (isNaN(newDate)) {
-    interaction.reply('New time missing or invalid.\n```Example: 2021-04-02T13:25:30\n         YYYY-MM-DDTHH:MM:SS```\n(note letter T and 24-hour format)')
+    await interaction.reply('New time missing or invalid.\n```Example: 2021-04-02T13:25:30\n         YYYY-MM-DDTHH:MM:SS```\n(note letter T and 24-hour format)')
     return
   }
 
@@ -52,31 +52,31 @@ const slashCommandExecute = async (interaction) => {
     // Ensure there is a user record
     const dbId = await DB.checkIfUserExists(interaction.user.id)
     if (!dbId) {
-      interaction.followUp('You haven\'t used ScrummyBot to track time yet. Try /clockin first.')
+      await interaction.followUp('You haven\'t used ScrummyBot to track time yet. Try /clockin first.')
       return
     }
 
     // Get their time card for this server
     const timeCard = await DB.getUserTimeCard(dbId, interaction.guild.id)
     if (!timeCard || timeCard.length === 0) {
-      interaction.followUp('You haven\'t clocked in on this server yet. Try /clockin first.')
+      await interaction.followUp('You haven\'t clocked in on this server yet. Try /clockin first.')
       return
     }
 
     // Find the specific entry to adjust
     if (index < 0 || index >= timeCard.length) {
-      interaction.followUp('Punch index is invalid. Run /list first for some valid indexes.')
+      await interaction.followUp('Punch index is invalid. Run /list first for some valid indexes.')
       return
     }
 
     // Adjust entry and update in database
-    interaction.followUp(`Attempting to adjust entry ${index + 1} to time ${UTIL.formatDate(newDate)} ...`)
+    await interaction.followUp(`Attempting to adjust entry ${index + 1} to time ${UTIL.formatDate(newDate)} ...`)
     const newTimeCard = [...timeCard]
     newTimeCard[index].time = new Date(newDate)
     await DB.setUserTimecard(dbId, interaction.guild.id, newTimeCard)
 
     // Send the full message
-    interaction.followUp('Entry updated')
+    await interaction.followUp('Entry updated')
   } catch (err) {
     debug('Error adjusting entry')
     debug(err)

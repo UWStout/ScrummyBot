@@ -28,7 +28,7 @@ const chartBuilder = new ChartBuilder()
 const slashCommandExecute = async (interaction) => {
   // Only makes sense inside a server channel
   if (!interaction.guild) {
-    interaction.reply('This command only works in a specific server channel')
+    await interaction.reply('This command only works in a specific server channel')
     return
   }
 
@@ -46,12 +46,12 @@ const slashCommandExecute = async (interaction) => {
 
   // Check for valid dates
   if (isNaN(start)) {
-    interaction.reply('Start time missing or invalid.\n```Example: 2021-04-02T13:25:30\n         YYYY-MM-DDTHH:MM:SS```\n(note letter T and 24-hour format)')
+    await interaction.reply('Start time missing or invalid.\n```Example: 2021-04-02T13:25:30\n         YYYY-MM-DDTHH:MM:SS```\n(note letter T and 24-hour format)')
     return
   }
 
   if (isNaN(end)) {
-    interaction.reply('End time is invalid.\n```Example: 2021-04-02T13:25:30\n         YYYY-MM-DDTHH:MM:SS```\n(note letter T and 24-hour format)')
+    await interaction.reply('End time is invalid.\n```Example: 2021-04-02T13:25:30\n         YYYY-MM-DDTHH:MM:SS```\n(note letter T and 24-hour format)')
     return
   }
 
@@ -63,13 +63,13 @@ const slashCommandExecute = async (interaction) => {
     // Get their time card for this server
     const timeCardInRange = await DB.getServerDataInRange(new Date(start), new Date(end), interaction.guild.id)
     if (!timeCardInRange || timeCardInRange.length === 0) {
-      interaction.followUp('No data returned.')
+      await interaction.followUp('No data returned.')
       return
     }
 
     // Make the chart and send it
     const imageBuffer = await chartBuilder.makeServerHoursChart(interaction.guild.name, new Date(start), new Date(end), timeCardInRange)
-    interaction.channel.send(`${interaction.user} Here is your data`, { files: [imageBuffer] })
+    await interaction.channel.send(`${interaction.user} Here is your data`, { files: [imageBuffer] })
   } catch (err) {
     debug('Error reporting list')
     debug(err)

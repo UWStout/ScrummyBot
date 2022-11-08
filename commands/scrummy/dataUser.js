@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js'
+import { AttachmentBuilder, SlashCommandBuilder } from 'discord.js'
 
 // Helper functions
 import ChartBuilder from '../../chartBuilder.js'
@@ -29,7 +29,7 @@ const chartBuilder = new ChartBuilder()
 const slashCommandExecute = async (interaction) => {
   // Only makes sense inside a server channel
   if (!interaction.guild) {
-    interaction.reply('This command only works in a specific server channel')
+    await interaction.reply('This command only works in a specific server channel')
     return
   }
 
@@ -47,12 +47,12 @@ const slashCommandExecute = async (interaction) => {
 
   // Check for valid dates
   if (isNaN(start)) {
-    interaction.reply('Start time missing or invalid.\n```Example: 2021-04-02T13:25:30\n         YYYY-MM-DDTHH:MM:SS```\n(note letter T and 24-hour format)')
+    await interaction.reply('Start time missing or invalid.\n```Example: 2021-04-02T13:25:30\n         YYYY-MM-DDTHH:MM:SS```\n(note letter T and 24-hour format)')
     return
   }
 
   if (isNaN(end)) {
-    interaction.reply('End time is invalid.\n```Example: 2021-04-02T13:25:30\n         YYYY-MM-DDTHH:MM:SS```\n(note letter T and 24-hour format)')
+    await interaction.reply('End time is invalid.\n```Example: 2021-04-02T13:25:30\n         YYYY-MM-DDTHH:MM:SS```\n(note letter T and 24-hour format)')
     return
   }
 
@@ -64,20 +64,21 @@ const slashCommandExecute = async (interaction) => {
     // Ensure there is a user record
     const dbId = await DB.checkIfUserExists(interaction.user.id)
     if (!dbId) {
-      interaction.followUp('You haven\'t used ScrummyBot to track time yet. Try /clockin first.')
+      await interaction.followUp('You haven\'t used ScrummyBot to track time yet. Try /clockin first.')
       return
     }
 
     // Get their time card for this server
     const timeCardInRange = await DB.getServerDataInRange(new Date(start), new Date(end), dbId, interaction.guild.id)
     if (!timeCardInRange || timeCardInRange.length === 0) {
-      interaction.followUp('No data returned.')
+      await interaction.followUp('No data returned.')
       return
     }
 
     // Make the chart and send it
     const imageBuffer = await chartBuilder.makeUserHoursChart(timeCardInRange[0].discordName, new Date(start), new Date(end), timeCardInRange)
-    interaction.channel.send(`${interaction.user} Here is your data`, { files: [imageBuffer] })
+    const attachment = new AttachmentBuilder(imageBuffer, { name: 'userData.png' })
+    await interaction.followUp(`${interaction.user} Here is your data`, { attachments: [attachment] })
   } catch (err) {
     debug('Error reporting user data')
     debug(err)

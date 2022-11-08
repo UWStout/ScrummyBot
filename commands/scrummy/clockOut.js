@@ -17,7 +17,7 @@ slashCommandData.setDescription('Clock out and stop tracking your time')
 const slashCommandExecute = async (interaction) => {
   // Only makes sense inside a server channel
   if (!interaction.guild) {
-    interaction.reply('This command only works in a specific server channel')
+    await interaction.reply('This command only works in a specific server channel')
     return
   }
 
@@ -28,7 +28,7 @@ const slashCommandExecute = async (interaction) => {
     // Ensure there is a user record
     let dbId = await DB.checkIfUserExists(interaction.user.id)
     if (!dbId) {
-      interaction.reply(`Creating new ScrummyBot entry for ${interaction.user.tag}`)
+      await interaction.reply(`Creating new ScrummyBot entry for ${interaction.user.tag}`)
       dbId = await DB.createUser(interaction.user.id, interaction.user.tag, interaction.guild.id)
     } else {
       // Retrieve the last punch
@@ -36,13 +36,13 @@ const slashCommandExecute = async (interaction) => {
 
       // Was it a punch-out?
       if (lastPunch.punch === 'out') {
-        interaction.reply(`You clocked out of this server on ${formatDate(lastPunch.time)}. Try /clockin first.`)
+        await interaction.reply(`You clocked out of this server on ${formatDate(lastPunch.time)}. Try /clockin first.`)
         return
       }
     }
 
     // Add a clock-in record
-    interaction.reply(`Clocking out for ${interaction.user.username}.\nYou worked for ${formatDuration(lastPunch.time)}`)
+    await interaction.reply(`Clocking out for ${interaction.user.username}.\nYou worked for ${formatDuration(lastPunch.time)}`)
     await DB.punchUserTimeCard(dbId, interaction.guild.id, 'out')
   } catch (err) {
     debug('Error clocking out')

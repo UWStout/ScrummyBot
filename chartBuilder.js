@@ -127,8 +127,8 @@ class ChartBuilder {
           ]
         },
         scales: {
-          xAxes: [{ scaleLabel: { display: true, labelString: 'Day' } }],
-          yAxes: [{ scaleLabel: { display: true, labelString: 'Minutes' } }]
+          x: { title: { display: true, text: 'Day' } },
+          y: { title: { display: true, text: 'Minutes' } }
         }
       }
     }
@@ -169,8 +169,10 @@ class ChartBuilder {
           ]
         },
         scales: {
-          xAxes: [{ scaleLabel: { display: true, labelString: 'Day' } }],
-          yAxes: [{ scaleLabel: { display: true, labelString: 'Minutes' } }]
+          scales: {
+            x: { title: { display: true, text: 'Day' } },
+            y: { title: { display: true, text: 'Minutes' } }
+          }
         }
       }
     }

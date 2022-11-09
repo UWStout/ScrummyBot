@@ -6,11 +6,14 @@ import { MongoClient, ObjectId, ServerApiVersion } from 'mongodb'
 // Setup debug output object
 const debug = Debug('bot:db_helper')
 
+// Running in dev mode?
+const _DEV_ = process.argv.some(arg => arg.toLowerCase() === 'dev')
+
 // Load .env config (contains DB login credentials)
 dotenv.config()
 
 // Basic DB setup/config
-const DB_NAME = process.env.DB_NAME || 'ScrummyData'
+const DB_NAME = (_DEV_ ? process.env.DEV_DB_NAME : process.env.PROD_DB_NAME) || 'ScrummyData'
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PW}@berriercluster.m5otq.mongodb.net/?retryWrites=true&w=majority`
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
@@ -218,8 +221,6 @@ export async function getLastPunch (dbID, serverID) {
   try {
     // Get the proper timecard for this user
     const timeCard = await getUserTimeCard(dbID, serverID)
-    debug(`Time card for user ${dbID} on ${serverID}:`)
-    debug(timeCard)
 
     // Return last entry (which will be most recent punch)
     if (timeCard.length > 0) {

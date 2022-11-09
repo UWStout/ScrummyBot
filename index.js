@@ -7,7 +7,7 @@ import { Client, Events, GatewayIntentBits } from 'discord.js'
 
 // Import our bot command collection
 import BotCommands from './commands/index.js'
-import { monitorClient } from './clientMonitor/index.js'
+// import { monitorClient } from './clientMonitor/index.js'
 
 // Setup debug output object
 const debug = Debug('bot')

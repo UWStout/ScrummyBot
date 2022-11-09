@@ -1,44 +1,55 @@
-// Import the general command object
-import DBCommand from '../DBCommand.js'
+import { SlashCommandBuilder } from 'discord.js'
 
-// Define the clock-in command
-class UsersCommand extends DBCommand {
-  constructor () {
-    super('!users', ['!us'], [], ['List all the users on this server and their', 'current status.'])
+// Helper functions
+import * as DB from '../dbHelper.js'
+
+// Debugging output
+import Debug from 'debug'
+const debug = Debug('bot:cmd:users')
+
+// The core data for this command
+const slashCommandData = new SlashCommandBuilder()
+slashCommandData.setName('users')
+slashCommandData.setDescription('List all the users on this server and their current status.')
+
+// the main callback function for this command
+const slashCommandExecute = async (interaction) => {
+  // Only makes sense inside a server channel
+  if (!interaction.guild) {
+    await interaction.reply('This command only works in a specific server channel')
+    return
   }
 
-  // Override execute method
-  async execute (msg, args) {
-    // Only makes sense inside a server channel
-    if (!msg.guild) {
-      msg.reply('This command only works in a specific server channel')
+  // Acknowledge receipt of interaction
+  await interaction.deferReply()
+
+  // Prepare response
+  try {
+    // Get their time card for this server
+    const allUsers = await DB.getUsersOnServer(interaction.guild.id)
+    if (!allUsers || allUsers.length === 0) {
+      await interaction.followUp('No users found (that\'s weird!)')
       return
     }
 
-    try {
-      // Get their time card for this server
-      const allUsers = await this.getUsersOnServer(msg.guild.id)
-      if (!allUsers || allUsers.length === 0) {
-        msg.reply('No users found (that\'s werid!)')
-        return
-      }
+    // Build the message
+    let message = `Scrummy Bot has seen these users on ${interaction.guild.name}\n\`\`\``
+    allUsers.forEach((user) => {
+      message += `- ${user.discordName} is clocked ${user.timeCard.punch}\n`
+    })
+    message += '```'
 
-      // Build the message
-      let message = `Scrummy Bot has seen these users on ${msg.guild.name}\n\`\`\``
-      allUsers.forEach((user) => {
-        message += `- ${user.discordName} is clocked ${user.timeCard.punch}\n`
-      })
-      message += '```'
-
-      // Send the full message
-      msg.reply(message)
-    } catch (err) {
-      console.error('Error reporting users')
-      console.error(err)
-    }
+    // Send the full message
+    await interaction.followUp(message)
+  } catch (err) {
+    debug('Error reporting users')
+    debug(err)
+    await interaction.followUp('Uh-oh, something went wrong.')
   }
 }
 
-// Instantiate and export as a singleton for import into other files
-const Users = new UsersCommand()
-export default Users
+// Export command
+export default {
+  data: slashCommandData,
+  execute: slashCommandExecute
+}

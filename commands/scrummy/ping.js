@@ -1,18 +1,17 @@
-// Import the general command object
-import Command from '../Command.js'
+import { SlashCommandBuilder } from 'discord.js'
 
-// Define the ping command
-class PingCommand extends Command {
-  constructor () {
-    super('!ping', [], [], 'Ping the bot, responds with pong')
-  }
+// The core data for this command
+const slashCommandData = new SlashCommandBuilder()
+slashCommandData.setName('ping')
+slashCommandData.setDescription('Replies with Pong!')
 
-  // Override execute method
-  execute (msg, args) {
-    msg.reply('pong')
-  }
+// the main callback function for this command
+const slashCommandExecute = async (interaction) => {
+  await interaction.reply('Pong!')
 }
 
-// Instantiate and export as a singleton for import into other files
-const ping = new PingCommand()
-export default ping
+// Export command
+export default {
+  data: slashCommandData,
+  execute: slashCommandExecute
+}

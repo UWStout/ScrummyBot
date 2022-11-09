@@ -1,1 +1,1 @@
-worker: node dist/scrummybot.js
+worker: node index.js

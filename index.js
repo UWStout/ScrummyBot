@@ -1,41 +1,87 @@
-// Import node module libraries
+// Import basic env and debug tools
 import Dotenv from 'dotenv'
-import Discord from 'discord.js'
+import Debug from 'debug'
+
+// Import discord.js library objects
+import { Client, Events, GatewayIntentBits } from 'discord.js'
 
 // Import our bot command collection
-import BotCommands from './commands'
+import BotCommands from './commands/index.js'
+// import { monitorClient } from './clientMonitor/index.js'
+
+// Setup debug output object
+const debug = Debug('bot')
+
+// Running in dev mode?
+const _DEV_ = process.argv.some(arg => arg.toLowerCase() === 'dev')
 
 // Initialize environment variables
 Dotenv.config()
 const TOKEN = (_DEV_ ? process.env.DEV_TOKEN : process.env.TOKEN)
 
 // Initialize the bot
-const bot = new Discord.Client()
-bot.login(TOKEN)
+const bot = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildBans,
+    GatewayIntentBits.GuildEmojisAndStickers,
+    GatewayIntentBits.GuildVoiceStates,
+    GatewayIntentBits.GuildPresences,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.GuildMessageReactions,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.DirectMessages,
+    GatewayIntentBits.DirectMessageReactions
+  ]
+})
 
-// Setup command processing
+// Setup command processing (see 'commands/index.js')
 bot.commands = BotCommands
 
-// Respond to ready event
-bot.on('ready', () => {
-  console.info(`Logged in as ${bot.user.tag}!`)
+// Setup general client monitoring (see 'clientMonitor/index.js')
+// monitorClient(bot)
+
+// Receive the ready event
+bot.once(Events.ClientReady, c => {
+  debug(`Ready! Logged in as ${c.user.tag}`)
 })
 
-// Respond to message event
-bot.on('message', (msg) => {
-  // Split message to search for a bot command
-  const args = msg.content.split(/\s+/)
-  const command = args.shift().toLowerCase()
+// Handle error events
+bot.on(Events.Error, (error) => {
+  debug('CLIENT error message:')
+  debug(error)
+})
 
-  // This is not a command
-  if (!bot.commands.has(command)) return
+// Interaction events
+bot.on(Events.InteractionCreate, async (interaction) => {
+  // Only care about chat input interactions
+  if (!interaction.isChatInputCommand()) {
+    return
+  }
 
-  // Dispatch the command
-  console.info(`Called command: ${command}`)
+  // Locate the command
+  const command = interaction.client.commands.get(interaction.commandName)
+  if (!command) {
+    debug(`No command matching ${interaction.commandName} was found.`)
+  }
+
+  // Try to run the command
   try {
-    bot.commands.get(command).execute(msg, args)
+    await command.execute(interaction)
   } catch (error) {
-    console.error(error)
-    msg.reply('there was an error trying to execute that command!')
+    debug(error)
+    await interaction.reply({
+      content: 'There was an error while executing this command!',
+      ephemeral: true
+    })
   }
 })
+
+// Catch and report info on any unhandled promise rejections
+process.on('unhandledRejection', error => {
+  debug('Unhandled promise rejection:', error)
+})
+
+// Login and start up the client
+bot.login(TOKEN)

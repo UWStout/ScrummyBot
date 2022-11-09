@@ -1,81 +1,91 @@
-// Import the general command object
-import DBCommand from '../DBCommand.js'
+import { SlashCommandBuilder } from 'discord.js'
 
 // Helper functions
 import * as UTIL from '../util.js'
+import * as DB from '../dbHelper.js'
 
-// Define the clock-in command
-class AdjustCommand extends DBCommand {
-  // Build a new DB Command with fixed strings
-  constructor () {
-    super('!adjust', ['!adj'], ['n', 'new_time'],
-      ['Adjust a time-card punch to a new time.', 'Use !list to get valid n value.', '"new_time" must be parsable by Date.parse().']
-    )
+// Debugging output
+import Debug from 'debug'
+const debug = Debug('bot:cmd:adjust')
+
+// The core data for this command
+const slashCommandData = new SlashCommandBuilder()
+slashCommandData.setName('adjust')
+slashCommandData.setDescription('Adjust a time-card punch to a new time.')
+slashCommandData.addIntegerOption(option =>
+  option.setName('n')
+    .setDescription('The index of the punch to adjust as shown by the /list command')
+    .setMinValue(1)
+    .setRequired(true)
+)
+slashCommandData.addStringOption(option =>
+  option.setName('newtime')
+    .setDescription('A date-time to use for the indicated punch. Must be parsable by Date.parse().')
+    .setRequired(true)
+)
+
+// the main callback function for this command
+const slashCommandExecute = async (interaction) => {
+  // Only makes sense inside a server channel
+  if (!interaction.guild) {
+    await interaction.reply('This command only works in a specific server channel')
+    return
   }
 
-  // Override execute method
-  async execute (msg, args) {
-    // Only makes sense inside a server channel
-    if (!msg.guild) {
-      msg.reply('This command only works in a specific server channel')
+  // Parse arguments
+  const index = interaction.options.getInteger('n') - 1
+  let newDateStr = interaction.options.getString('newtime')
+  if (newDateStr.indexOf('T') === -1) { newDateStr += 'T00:00:00' }
+  const newDate = Date.parse(newDateStr)
+
+  // Check for parsable date-time
+  if (isNaN(newDate)) {
+    await interaction.reply('New time missing or invalid.\n```Example: 2021-04-02T13:25:30\n         YYYY-MM-DDTHH:MM:SS```\n(note letter T and 24-hour format)')
+    return
+  }
+
+  // Acknowledge receipt of interaction
+  await interaction.deferReply()
+
+  // Prepare response
+  try {
+    // Ensure there is a user record
+    const dbId = await DB.checkIfUserExists(interaction.user.id)
+    if (!dbId) {
+      await interaction.followUp('You haven\'t used ScrummyBot to track time yet. Try /clockin first.')
       return
     }
 
-    // Check for required index
-    if (args.length < 1 || isNaN(args[0])) {
-      msg.reply('Punch index is missing or invalid. Run !list first for some valid indexes.')
+    // Get their time card for this server
+    const timeCard = await DB.getUserTimeCard(dbId, interaction.guild.id)
+    if (!timeCard || timeCard.length === 0) {
+      await interaction.followUp('You haven\'t clocked in on this server yet. Try /clockin first.')
       return
     }
 
-    // Check for parsable date-time
-    if (args.length < 2 || isNaN(Date.parse(args[1]))) {
-      msg.reply('New time missing or invalid.\n```Example: 2021-04-02T13:25:30\n         YYYY-MM-DDTHH:MM:SS```\n(note letter T and 24-hour format)')
+    // Find the specific entry to adjust
+    if (index < 0 || index >= timeCard.length) {
+      await interaction.followUp('Punch index is invalid. Run /list first for some valid indexes.')
       return
     }
 
-    // Ensure date provided uses local time zone
-    if (args[1].indexOf('T') === -1) { args[1] += 'T00:00:00' }
+    // Adjust entry and update in database
+    await interaction.followUp(`Attempting to adjust entry ${index + 1} to time ${UTIL.formatDate(newDate)} ...`)
+    const newTimeCard = [...timeCard]
+    newTimeCard[index].time = new Date(newDate)
+    await DB.setUserTimecard(dbId, interaction.guild.id, newTimeCard)
 
-    // Parse arguments
-    const index = parseInt(args[0]) - 1
-    const newDate = Date.parse(args[1])
-
-    try {
-      // Ensure there is a user record
-      const dbId = await this.checkIfUserExists(msg.author.id)
-      if (!dbId) {
-        msg.reply('You haven\'t used ScrummyBot to track time yet. Try !clockin first.')
-        return
-      }
-
-      // Get their time card for this server
-      const timeCard = await this.getUserTimeCard(dbId, msg.guild.id)
-      if (!timeCard || timeCard.length === 0) {
-        msg.reply('You haven\'t clocked in on this server yet. Try !clockin first.')
-        return
-      }
-
-      // Find the specific entry to adjust
-      if (index < 0 || index >= timeCard.length) {
-        msg.reply('Punch index is invalid. Run !list first for some valid indexes.')
-        return
-      }
-
-      // Adjust entry and update in database
-      msg.reply(`Attempting to adjust entry ${index + 1} to time ${UTIL.formatDate(newDate)} ...`)
-      const newTimeCard = [...timeCard]
-      newTimeCard[index].time = new Date(newDate)
-      await this.setUserTimecard(dbId, msg.guild.id, newTimeCard)
-
-      // Send the full message
-      msg.reply('Entry updated')
-    } catch (err) {
-      console.error('Error adjusting entry')
-      console.error(err)
-    }
+    // Send the full message
+    await interaction.followUp('Entry updated')
+  } catch (err) {
+    debug('Error adjusting entry')
+    debug(err)
+    await interaction.followUp('Uh-oh, something went wrong.')
   }
 }
 
-// Instantiate and export as a singleton for import into other files
-const Adjust = new AdjustCommand()
-export default Adjust
+// Export command
+export default {
+  data: slashCommandData,
+  execute: slashCommandExecute
+}

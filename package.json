@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "devStart": "bash -c 'DEBUG=bot,bot:* DEBUG_HIDE_DATE=true DEBUG_COLORS=true nodemon index.js dev'",
-    "start": "bash -c 'DEBUG=bot,bot:* DEBUG_HIDE_DATE=true DEBUG_COLORS=true node index.js",
+    "start": "bash -c 'DEBUG=bot,bot:* DEBUG_HIDE_DATE=true DEBUG_COLORS=true node index.js'",
     "deploy": "node deployCommands.js",
     "devDeploy": "node deployCommands.js dev"
   },

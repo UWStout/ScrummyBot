@@ -3,9 +3,6 @@ import { ChartJSNodeCanvas } from 'chartjs-node-canvas'
 import * as d3 from 'd3-time'
 import * as UTIL from './commands/util.js'
 
-import Debug from 'debug'
-const debug = Debug('bot:chartBuilder')
-
 class ChartBuilder {
   constructor (width = 1000, height = 600) {
     // Customize the global ChartJS and any plugins
@@ -106,7 +103,6 @@ class ChartBuilder {
 
   makeUserHoursChart (userName, rangeStart, rangeEnd, data) {
     const binData = this.reBinTimeCardData(rangeStart, rangeEnd, data)
-    debug(binData)
 
     // Build the chart using the chart.js/Image-Chart API
     const chartConfig = {
@@ -122,26 +118,25 @@ class ChartBuilder {
         ]
       },
       options: {
-        legend: { display: false },
-        title: {
-          display: true,
-          text: [
-            `Hours Worked for ${userName}`,
-            `${this.dateFormatter.format(rangeStart)} to ${this.dateFormatter.format(rangeEnd)}`
-          ]
+        plugins: {
+          legend: { display: false },
+          title: {
+            display: true,
+            text: [
+              `Hours Worked for ${userName}`,
+              `${this.dateFormatter.format(rangeStart)} to ${this.dateFormatter.format(rangeEnd)}`
+            ]
+          }
         },
         scales: {
-          xAxis: { title: { display: true, text: 'Day' } },
-          yAxis: { title: { display: true, text: 'Minutes' } }
+          x: { title: { display: true, text: 'Day' } },
+          y: { title: { display: true, text: 'Minutes' } }
         }
       }
     }
 
     // Setup image properties and return Promise that resolves to data buffer
-    debug(2)
-    const promise = this.chartJSNodeCanvas.renderToBuffer(chartConfig, 'image/jpeg')
-    promise.then(buffer => { debug('Buffer received') }).catch(err => { debug('Chart Error', err) })
-    return promise
+    return this.chartJSNodeCanvas.renderToBufferSync(chartConfig, 'image/png')
   }
 
   makeServerHoursChart (serverName, rangeStart, rangeEnd, data) {
@@ -164,28 +159,28 @@ class ChartBuilder {
         })
       },
       options: {
-        legend: {
-          position: 'right',
-          align: 'start'
-        },
-        title: {
-          display: true,
-          text: [
-            `Hours Worked for users in the '${serverName}' server`,
-            `${this.dateFormatter.format(rangeStart)} to ${this.dateFormatter.format(rangeEnd)}`
-          ]
+        plugins: {
+          title: {
+            display: true,
+            text: [
+              `Hours Worked for users in the '${serverName}' server`,
+              `${this.dateFormatter.format(rangeStart)} to ${this.dateFormatter.format(rangeEnd)}`
+            ]
+          },
+          legend: {
+            position: 'right',
+            align: 'start'
+          }
         },
         scales: {
-          scales: {
-            x: { title: { display: true, text: 'Day' } },
-            y: { title: { display: true, text: 'Minutes' } }
-          }
+          x: { title: { display: true, text: 'Day' } },
+          y: { title: { display: true, text: 'Minutes' } }
         }
       }
     }
 
     // Setup image properties and return Promise that resolves to data buffer
-    return this.chartJSNodeCanvas.renderToBuffer(chartConfig, 'image/jpeg')
+    return this.chartJSNodeCanvas.renderToBufferSync(chartConfig, 'image/png')
   }
 }
 
